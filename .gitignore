@@ -1,27 +1,27 @@
-*.log
+# Build artifacts (regenerable from backend/ + staff-portal.html)
+/deploy-build/
+/scratch-deploy/
+/verify-extract/
+/stps-staff-portal-deploy.tar.gz
+/stps-staff-portal-deploy.zip
+
+# Real staff personal data - never commit to a public repo
+/Staff DB.pdf
+/Staff DB.xlsx
+/stps-staff-database.sql
+/Daily_Report_*.pdf
+
+# Unused draft/alternate images (only school-hero.png and school-crest.png are live)
+/Logo A v1.0 - PNG.png
+/SCHOOL IMAGE 03.png
+/Schoo Image .jpg
+/school image new.png
+/school-hero.jpg
+
 .DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/fonts-manifest.dev.json
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-_ide_helper.php
-Homestead.json
-Homestead.yaml
 Thumbs.db
+.claude/
+STPS_Staff_Attendance_and_Leave_Management_System_Proposal.docx
+patch-upload/phpoption.tar.gz
+patch-upload/var-dumper.tar.gz
+school-hero.png

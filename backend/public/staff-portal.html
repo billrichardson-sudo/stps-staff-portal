@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Staff Portal — Attendance & Leave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,650&family=Public+Sans:wght@400;500;600;700&family=Saira+Extra+Condensed:wght@800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface2:#EAF4FD; --ink:#16202B; --muted:#5C7184; --line:#D7E6F3;
+  --brand:#2F80ED; --brand-ink:#FFFFFF; --side:#F6FAFE; --side-ink:#16202B; --side-muted:#5C7184;
+  --ok:#1E7A4F; --ok-bg:#E3F3EA; --warn:#9A6212; --warn-bg:#FBF0DC; --bad:#B42318; --bad-bg:#FBE7E5;
+  --info:#2F5D8A; --info-bg:#E4EDF6; --idle:#5B6863; --idle-bg:#ECEFEE;
+  --serif:"Literata", Georgia, "Times New Roman", serif;
+  --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; min-height:100%; background:var(--bg); color:var(--ink); font:15px/1.5 var(--sans)}
+h1,h2,h3{font-family:var(--serif); font-weight:650; margin:0; line-height:1.2}
+h1{font-size:1.75rem} h2{font-size:1.25rem} h3{font-size:1.05rem}
+p{margin:0}
+button,input,select,textarea{font:inherit; color:inherit}
+a{color:var(--brand)}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+.app{display:grid; grid-template-columns:240px 1fr; min-height:100vh}
+.side{background:var(--side); color:var(--side-ink); padding:1.25rem .75rem; display:flex; flex-direction:column; gap:.25rem; position:sticky; top:0; height:100vh; overflow:auto; border-right:1px solid var(--line)}
+.school{padding:.25rem .6rem 1rem; border-bottom:1px solid var(--line); margin-bottom:.5rem}
+.school b{display:block; font-family:var(--serif); font-size:1.02rem; line-height:1.25}
+.school span{color:var(--side-muted); font-size:.8rem}
+.navgroup{color:var(--side-muted); font-size:.78rem; padding:.9rem .6rem .25rem}
+.nav{display:flex; align-items:center; justify-content:space-between; gap:.5rem; width:100%; text-align:left; background:none; border:0; color:var(--side-ink); padding:.5rem .6rem; border-radius:6px; cursor:pointer; font-size:.93rem}
+.nav:hover{background:var(--surface2)}
+.nav.on{background:var(--surface2); font-weight:600; color:var(--brand)}
+.count{background:#E3AE5B; color:#2A1C05; border-radius:10px; font-size:.72rem; font-weight:700; padding:0 .45rem; min-width:1.3rem; text-align:center}
+.side .me{margin-top:auto; padding:.8rem .6rem 0; border-top:1px solid var(--line); font-size:.85rem}
+.side .me small{color:var(--side-muted); display:block}
+.side .me button{margin-top:.5rem; background:none; border:1px solid var(--line); color:var(--side-ink); border-radius:6px; padding:.3rem .7rem; cursor:pointer}
+
+/* gradient icon pills — the 5 main "Me" nav items */
+.nav-pills{display:flex; flex-direction:column; gap:.35rem; padding:0 .6rem}
+.nav-pill{position:relative; display:flex; align-items:center; width:44px; height:44px; border-radius:999px; background:var(--surface2); border:0; padding:0; cursor:pointer; overflow:hidden; flex-shrink:0; transition:width .4s cubic-bezier(.23,1,.32,1)}
+.nav-pill:hover, .nav-pill.on{width:180px}
+.nav-pill .pill-fill{position:absolute; inset:0; border-radius:999px; opacity:0; transition:opacity .4s; background:linear-gradient(135deg,var(--g-from),var(--g-to))}
+.nav-pill:hover .pill-fill, .nav-pill.on .pill-fill{opacity:1}
+.nav-pill .pill-icon{position:relative; z-index:1; flex-shrink:0; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:color .3s, transform .3s}
+.nav-pill:hover .pill-icon, .nav-pill.on .pill-icon{color:#fff; transform:scale(.82)}
+.nav-pill .pill-label{position:relative; z-index:1; color:#fff; font-size:.85rem; font-weight:600; white-space:nowrap; opacity:0; transform:translateX(-8px); transition:opacity .3s .08s, transform .3s .08s; margin-right:.8rem}
+.nav-pill:hover .pill-label, .nav-pill.on .pill-label{opacity:1; transform:translateX(0)}
+.nav-pill .pill-count{position:absolute; top:1px; right:1px; z-index:2}
+@media (prefers-reduced-motion:reduce){.nav-pill, .nav-pill .pill-fill, .nav-pill .pill-icon, .nav-pill .pill-label{transition:none!important}}
+
+.main{min-width:0; padding:1.5rem 2rem 3rem}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem}
+.topbar .sub{color:var(--muted); font-size:.9rem; margin-top:.2rem}
+.menubtn{display:none}
+.bell{position:relative; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:.45rem .7rem; cursor:pointer}
+.bell .count{position:absolute; top:-7px; right:-7px}
+.banner{background:var(--info-bg); color:var(--info); border-radius:8px; padding:.6rem .9rem; font-size:.88rem; margin-bottom:1rem}
+
+.grid{display:grid; gap:1rem}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:1.1rem 1.2rem}
+.panel h2,.panel h3{margin-bottom:.8rem}
+.panel .head{display:flex; justify-content:space-between; align-items:center; gap:.8rem; margin-bottom:.8rem; flex-wrap:wrap}
+.panel .head h2,.panel .head h3{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.stack>*+*{margin-top:1rem}
+
+/* check-in hero */
+.clock{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:1.5rem; display:grid; grid-template-columns:1fr auto; gap:1.5rem; align-items:center}
+.clock .date{font-family:var(--serif); font-size:1.05rem; color:var(--muted)}
+.clock .time{font-family:var(--serif); font-size:3.4rem; font-weight:500; line-height:1; margin:.35rem 0 .9rem; font-variant-numeric:tabular-nums}
+.clock .times{display:flex; gap:2rem; font-size:.92rem}
+.clock .times b{display:block; font-size:1.15rem; font-variant-numeric:tabular-nums}
+.bigbtn{background:var(--brand); color:var(--brand-ink); border:0; border-radius:999px; padding:1.1rem 2.2rem; font-weight:700; font-size:1.05rem; cursor:pointer; min-width:170px}
+.bigbtn.out{background:var(--ink); color:var(--surface)}
+.bigbtn:disabled{opacity:.45; cursor:not-allowed}
+
+.stat{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:.9rem 1rem}
+.stat b{display:block; font-family:var(--serif); font-size:1.8rem; font-weight:500; font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted); font-size:.85rem}
+
+.bal{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem}
+.bal>div{background:var(--surface2); border-radius:8px; padding:.8rem .9rem}
+.bal b{font-family:var(--serif); font-size:1.6rem; font-weight:500}
+.bal .bar{height:6px; background:var(--line); border-radius:3px; margin-top:.5rem; overflow:hidden}
+.bal .bar i{display:block; height:100%; background:var(--brand)}
+
+table{width:100%; border-collapse:collapse; font-size:.9rem}
+th{text-align:left; font-weight:600; color:var(--muted); font-size:.82rem; padding:.5rem .6rem; border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:.6rem; border-bottom:1px solid var(--line); vertical-align:top}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--surface2)}
+.scroll{overflow-x:auto}
+.num{text-align:right; font-variant-numeric:tabular-nums}
+
+.pill{display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; padding:.12rem .6rem; font-size:.8rem; font-weight:600; white-space:nowrap}
+.pill::before{content:""; width:7px; height:7px; border-radius:50%; background:currentColor}
+.p-ok{background:var(--ok-bg); color:var(--ok)} .p-warn{background:var(--warn-bg); color:var(--warn)}
+.p-bad{background:var(--bad-bg); color:var(--bad)} .p-info{background:var(--info-bg); color:var(--info)}
+.p-idle{background:var(--idle-bg); color:var(--idle)}
+
+.btn{background:var(--surface); border:1px solid var(--line); border-radius:7px; padding:.5rem .95rem; cursor:pointer; font-weight:600; font-size:.9rem}
+.btn:hover{border-color:var(--muted)}
+.btn.pri{background:var(--brand); border-color:var(--brand); color:var(--brand-ink)}
+.btn.bad{color:var(--bad)} .btn.sm{padding:.3rem .65rem; font-size:.82rem}
+.btn:disabled{opacity:.5; cursor:not-allowed}
+.row{display:flex; gap:.6rem; flex-wrap:wrap; align-items:center}
+
+.form{display:grid; gap:1rem}
+.f2{display:grid; grid-template-columns:1fr 1fr; gap:1rem}
+label.fl{display:grid; gap:.3rem; font-size:.87rem; font-weight:600}
+label.fl span.h{font-weight:400; color:var(--muted); font-size:.8rem}
+input[type=text],input[type=date],input[type=time],input[type=number],input[type=password],input[type=email],input[type=month],select,textarea{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:7px; padding:.55rem .7rem; font-weight:400}
+textarea{min-height:80px; resize:vertical}
+.types{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.5rem}
+.types label{border:1px solid var(--line); border-radius:8px; padding:.65rem .75rem; cursor:pointer; font-weight:600; font-size:.9rem; display:flex; gap:.5rem; align-items:center}
+.types label:has(input:checked){border-color:var(--brand); background:var(--ok-bg)}
+.note{border-radius:8px; padding:.65rem .85rem; font-size:.87rem}
+.note.warn{background:var(--warn-bg); color:var(--warn)} .note.bad{background:var(--bad-bg); color:var(--bad)} .note.info{background:var(--info-bg); color:var(--info)}
+.check{display:flex; gap:.5rem; align-items:center; font-size:.9rem}
+
+/* approval trail */
+.trail{list-style:none; margin:0; padding:0}
+.trail li{position:relative; padding:0 0 1rem 1.6rem}
+.trail li::before{content:""; position:absolute; left:5px; top:6px; bottom:-6px; width:2px; background:var(--line)}
+.trail li:last-child::before{display:none}
+.trail li i{position:absolute; left:0; top:4px; width:12px; height:12px; border-radius:50%; background:var(--line); border:2px solid var(--surface)}
+.trail li.done i{background:var(--ok)} .trail li.now i{background:var(--warn)} .trail li.no i{background:var(--bad)} .trail li.skip i{background:var(--idle-bg)}
+.trail b{display:block; font-size:.92rem}
+.trail small{color:var(--muted)}
+.trail q{display:block; margin-top:.25rem; font-size:.87rem; quotes:none; background:var(--surface2); padding:.4rem .6rem; border-radius:6px}
+
+.modal{position:fixed; inset:0; background:rgba(10,20,16,.45); display:flex; align-items:flex-start; justify-content:center; padding:5vh 1rem; overflow:auto; z-index:50}
+.modal .box{background:var(--surface); border-radius:12px; width:min(640px,100%); padding:1.4rem; box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal .box .head{display:flex; justify-content:space-between; align-items:start; gap:1rem; margin-bottom:1rem}
+.x{background:none; border:0; font-size:1.4rem; cursor:pointer; color:var(--muted); line-height:1}
+dl.kv{display:grid; grid-template-columns:140px 1fr; gap:.35rem .8rem; margin:0 0 1rem; font-size:.9rem}
+dl.kv dt{color:var(--muted)} dl.kv dd{margin:0}
+
+.toast{position:fixed; left:50%; bottom:calc(1.5rem + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--surface); padding:.7rem 1.1rem; border-radius:8px; font-size:.9rem; z-index:60; max-width:90vw}
+.empty{padding:1.5rem; text-align:center; color:var(--muted)}
+.notif{padding:.7rem 0; border-bottom:1px solid var(--line); font-size:.9rem}
+.notif.unread b::after{content:" ●"; color:var(--warn)}
+
+/* login */
+.login{min-height:100vh; display:grid; grid-template-columns:1fr 1fr}
+.login .art{background:var(--side); color:var(--side-ink); padding:3rem; display:flex; flex-direction:column; justify-content:space-between}
+.login .art h1{font-size:2.6rem; max-width:12ch; color:#fff}
+.login .art p{color:var(--side-muted); max-width:40ch}
+.login .reg{font-family:var(--serif); font-size:.95rem; border-top:1px solid rgba(255,255,255,.12); padding-top:1rem; color:var(--side-muted)}
+.login .card{position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; padding:2rem; background:none}
+.login .card .card-bg{position:absolute; inset:0; z-index:0}
+.login .card .card-bg-layer{position:absolute; inset:0; background-color:#E2E2E2; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E"), radial-gradient(circle at 67.04% 45.93%, rgba(226,226,226,1) 0%, rgba(226,226,226,.844) 19.02%, rgba(226,226,226,.5) 38.05%, rgba(226,226,226,.156) 57.07%, rgba(226,226,226,0) 76.1%), radial-gradient(circle at 35.47% 65.92%, rgba(27,159,254,1) 0%, rgba(27,159,254,.844) 12.9%, rgba(27,159,254,.5) 25.8%, rgba(27,159,254,.156) 38.7%, rgba(27,159,254,0) 51.6%), radial-gradient(circle at 48.33% 20.11%, rgba(27,159,254,1) 0%, rgba(27,159,254,.844) 16.75%, rgba(27,159,254,.5) 33.5%, rgba(27,159,254,.156) 50.25%, rgba(27,159,254,0) 67%), radial-gradient(circle at 80.81% 88.03%, rgba(74,201,255,1) 0%, rgba(74,201,255,.844) 10.28%, rgba(74,201,255,.5) 20.55%, rgba(74,201,255,.156) 30.83%, rgba(74,201,255,0) 41.1%); background-size:120px 120px, auto, auto, auto, auto; background-blend-mode:overlay, normal, normal, normal, normal}
+.login .card .card-bg-grain{position:absolute; inset:0; width:100%; height:100%; opacity:.5; mix-blend-mode:overlay}
+.login .card form{position:relative; z-index:1}
+.login .card h2{color:#15181b}
+.login .card label.fl{color:#15181b}
+.login .card input{background:rgba(255,255,255,.72); border-color:rgba(0,0,0,.14); color:#15181b}
+.login .card .note.bad{background:rgba(255,255,255,.78); color:#8a2015}
+.login .card .note.info{background:rgba(255,255,255,.72); color:#1c3550; border:1px solid rgba(0,0,0,.08)}
+.login form{width:min(360px,100%)}
+
+/* sakura hero — login screen only */
+.login .art.sakura{position:relative; overflow:hidden; padding:0; background:#0c0f0d center/cover no-repeat url("school-hero.png")}
+.login .art.sakura::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(8,12,10,.18) 0%, rgba(8,12,10,.05) 32%, rgba(8,12,10,.82) 76%, rgba(8,12,10,.96) 100%)}
+.login .art.sakura::after{content:""; position:absolute; inset:0; opacity:.16; mix-blend-mode:overlay; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")}
+.sakura-tag{position:absolute; top:1.3rem; right:1.6rem; z-index:2; font-size:.72rem; letter-spacing:.06em; color:rgba(255,255,255,.6)}
+.sakura-title{position:absolute; top:2.2rem; left:3rem; right:3rem; z-index:2; margin:0; display:flex; align-items:center; gap:1.1rem; animation:sakuraRise .9s cubic-bezier(.2,.9,.2,1) both}
+.sakura-crest{height:4.6rem; width:auto; flex-shrink:0; filter:drop-shadow(0 2px 10px rgba(0,0,0,.45))}
+.sakura-wordmark{flex:1; min-width:0; display:flex; flex-direction:column; gap:.2em}
+.sakura-name{font-family:"Saira Extra Condensed","Arial Narrow",sans-serif; font-weight:800; letter-spacing:.015em; text-transform:uppercase; font-size:clamp(1.5rem,3vw,2.2rem); line-height:1.05; color:#fff; text-shadow:0 2px 16px rgba(0,0,0,.4); white-space:nowrap}
+.sakura-place{font-family:"Saira Extra Condensed","Arial Narrow",sans-serif; font-weight:600; letter-spacing:.16em; text-transform:uppercase; font-size:clamp(.78rem,1.4vw,.95rem); color:rgba(255,255,255,.72)}
+.sakura-copy{position:absolute; left:0; right:0; bottom:0; z-index:2; padding:1.5rem 3rem 2.2rem; display:flex; flex-direction:column; gap:.55rem; animation:sakuraRise 1s .15s cubic-bezier(.2,.9,.2,1) both}
+.sakura-keywords{display:flex; gap:1.1rem; font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.7); font-weight:500}
+.sakura-headline{font-family:var(--serif); font-size:1.3rem; font-weight:600; color:#fff; max-width:26ch; margin:0}
+.sakura-body{font-size:.86rem; line-height:1.6; color:rgba(255,255,255,.8); max-width:34ch; margin:0}
+.sakura-sub{font-weight:600; font-size:1rem; color:#fff; margin:.1rem 0 0}
+.sakura-foot{display:flex; justify-content:space-between; gap:1rem; margin-top:1.1rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,.18); font-size:.72rem; letter-spacing:.03em; color:rgba(255,255,255,.68)}
+@keyframes sakuraRise{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.sakura-title,.sakura-copy{animation:none}}
+
+/* flow button — sign in */
+.flow-btn{position:relative; display:flex; align-items:center; justify-content:center; gap:.3rem; overflow:hidden; width:100%; border:1.5px solid rgba(17,17,17,.4); border-radius:999px; background:none; padding:.9rem 2rem; font:inherit; font-weight:700; font-size:1rem; color:#111; cursor:pointer; transition:color .6s cubic-bezier(.23,1,.32,1), border-color .6s cubic-bezier(.23,1,.32,1), border-radius .6s cubic-bezier(.23,1,.32,1)}
+.flow-btn:hover{border-color:transparent; color:#fff; border-radius:12px}
+.flow-btn:active{transform:scale(.97)}
+.flow-btn .flow-text{position:relative; z-index:1; transform:translateX(-.6rem); transition:transform .8s ease}
+.flow-btn:hover .flow-text{transform:translateX(.6rem)}
+.flow-btn .flow-circle{position:absolute; top:50%; left:50%; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; background:#111; opacity:0; transform:scale(0); transition:transform .8s cubic-bezier(.19,1,.22,1), opacity .5s}
+.flow-btn:hover .flow-circle{transform:scale(40); opacity:1}
+.flow-btn .flow-arrow{position:absolute; top:50%; width:16px; height:16px; margin-top:-8px; z-index:1; transition:left .8s cubic-bezier(.34,1.56,.64,1), right .8s cubic-bezier(.34,1.56,.64,1), color .8s}
+.flow-btn .flow-arrow.left{left:-2rem; color:#111}
+.flow-btn:hover .flow-arrow.left{left:1rem; color:#fff}
+.flow-btn .flow-arrow.right{right:1rem; color:#111}
+.flow-btn:hover .flow-arrow.right{right:-2rem; color:#fff}
+@media (prefers-reduced-motion:reduce){.flow-btn, .flow-btn *{transition:none!important}}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed; inset:0 auto 0 0; width:260px; z-index:40; transform:translateX(-100%); transition:transform .2s; padding-top:calc(1.25rem + env(safe-area-inset-top,0px))}
+  .side.open{transform:none}
+  .menubtn{display:inline-block}
+  .main{padding:1rem 1rem 3rem}
+  .g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g2{grid-template-columns:1fr}
+  .login{grid-template-columns:1fr} .login .art{padding:2rem} .login .art h1{font-size:2rem}
+  .login .art.sakura{padding:0; min-height:46vh}
+  .sakura-title{top:1.6rem; left:1.5rem; right:1.5rem; gap:.7rem; align-items:flex-start}
+  .sakura-crest{height:3rem}
+  .sakura-name{font-size:clamp(1rem,5.2vw,1.35rem); white-space:normal}
+  .sakura-place{font-size:.75rem}
+  .sakura-copy{padding:1.2rem 1.5rem 1.6rem}
+}
+@media (max-width:560px){
+  .clock{grid-template-columns:1fr} .clock .time{font-size:2.8rem}
+  .types{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .f2,.bal{grid-template-columns:1fr}
+  dl.kv{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="root"><div class="empty" style="padding-top:30vh">Loading the staff portal…</div></div>
+<div id="modal"></div>
+<script>
+/* ============================================================
+   Staff Attendance & Leave Portal
+   Auth, leave applications and notifications are backed by the
+   Laravel API (same origin, Sanctum session auth). Staff/attendance/
+   settings/report screens are not wired up yet and still run on
+   this-device-only local data, same as the original prototype.
+   ============================================================ */
+const SCHOOL = "S. Thomas' Preparatory School";
+const COLLS = ["staff","leaves","attendance","notifications","audit","config","imports"];
+const S = {staff:{},leaves:{},attendance:{},notifications:{},audit:{},config:{},imports:{}};
+let DB = null, DL = null, MODE = "loading", ME = null, NEEDS_SETUP = false, DEMO_SEEDED = false;
+const putAsync=(c,id,obj)=>{ S[c][id]=obj; if(DB) return DB.doc(`${c}/${id}`).set(obj); saveLocal(); return Promise.resolve(); };
+const UI = {view:"home", modal:null, menu:false, filter:"", reportDate:null, reportMonth:null, applyErr:"", applyWarn:""};
+
+/* ---------- API client ---------- */
+let XSRF_READY = false, XSRF_INFLIGHT = null;
+function getCookie(name){ const m=document.cookie.match(new RegExp("(?:^|; )"+name+"=([^;]*)")); return m?decodeURIComponent(m[1]):null; }
+async function ensureCsrf(){
+  if(XSRF_READY) return;
+  if(!XSRF_INFLIGHT) XSRF_INFLIGHT = fetch("/sanctum/csrf-cookie",{credentials:"include"}).then(()=>{ XSRF_READY=true; }).finally(()=>{ XSRF_INFLIGHT=null; });
+  await XSRF_INFLIGHT;
+}
+async function api(method, path, body){
+  await ensureCsrf();
+  const opts = {method, credentials:"include", headers:{Accept:"application/json"}};
+  const token = getCookie("XSRF-TOKEN");
+  if(token) opts.headers["X-XSRF-TOKEN"]=token;
+  if(body instanceof FormData){ if(method!=="POST"){ body.append("_method",method); opts.method="POST"; } opts.body=body; }
+  else if(body!==undefined){ opts.headers["Content-Type"]="application/json"; opts.body=JSON.stringify(body); }
+  const res = await fetch(path, opts);
+  if(res.status===204) return null;
+  let data=null; try{ data=await res.json(); }catch(e){}
+  if(!res.ok){ const err=new Error((data&&(data.message))||res.statusText); err.status=res.status; err.errors=data&&data.errors; throw err; }
+  return data;
+}
+const apiGet = path => api("GET",path);
+const apiPost = (path,body) => api("POST",path,body);
+const apiPut = (path,body) => api("PUT",path,body);
+const apiDel = path => api("DELETE",path);
+function apiErr(err, fallback){ const first = err.errors && Object.values(err.errors)[0]; return (first&&first[0]) || err.message || fallback || "Something went wrong."; }
+
+/* ---------- per-view data cache ----------
+   Views call useFetch(key, fetcher) at the top of their render function.
+   First call returns null (triggering a loading state) and kicks off the
+   request in the background; when it resolves, the result is cached and
+   render() runs again so the view picks it up. invalidate() clears cached
+   keys after a mutation so the next render re-fetches fresh data. */
+const CACHE = {};
+function useFetch(key, fetcher){
+  if(Object.prototype.hasOwnProperty.call(CACHE,key)) return CACHE[key];
+  fetcher().then(data=>{ CACHE[key]=data===undefined?null:data; render(); }).catch(err=>{ CACHE[key]={__error:apiErr(err)}; render(); });
+  CACHE[key]=undefined;
+  return undefined;
+}
+function invalidate(prefix){ Object.keys(CACHE).forEach(k=>{ if(k===prefix||k.startsWith(prefix+":")) delete CACHE[k]; }); }
+function invalidateLeaves(){ ["myLeaves","approvalsQueue","hrQueue","balance","approvalChain"].forEach(invalidate); Object.keys(CACHE).forEach(k=>{ if(k.startsWith("leaveDetail:")) delete CACHE[k]; }); }
+
+const DEFAULT_CONFIG = {
+  policies:{
+    Tutorial:{casual:21, medical:21, shortFree:2, shortDeduct:0.5},
+    Support:{casual:14, medical:7, shortFree:2, shortDeduct:0.5},
+    Admin:{casual:14, medical:7, shortFree:2, shortDeduct:0.5}
+  },
+  routes:{ Tutorial:["first","headmaster","hr"], Support:["first","headmaster","hr"], Admin:["headmaster","hr"] },
+  headmasterApproverId:"",
+  lateAfter:"08:00", lateByCat:{Tutorial:"08:00", Support:"07:00", Admin:"08:00"}, halfDayBefore:"11:30",
+  holidays:[]
+};
+const ROLES = {staff:"Staff", sectional_head:"Sectional Head", supervisor:"Support Staff Supervisor", headmaster:"Headmaster", hr:"HR"};
+const TYPES = ["Casual","Medical","Short","Other"];
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const nowHM = () => { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const parse = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const fd = s => { if(!s) return "—"; const d=parse(s); return `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
+const fdShort = s => { const d=parse(s); return `${d.getDate()} ${MON[d.getMonth()]}`; };
+const fdLong = s => { const d=parse(s); return `${DAYL[d.getDay()]}, ${d.getDate()} ${MONL[d.getMonth()]} ${d.getFullYear()}`; };
+const t12 = hm => { if(!hm) return "———"; let [h,m]=hm.split(":").map(Number); const ap=h>=12?"PM":"AM"; h=h%12||12; return `${h}:${pad(m)} ${ap}`; };
+const stamp = iso => { const d=new Date(iso); return `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}, ${t12(`${pad(d.getHours())}:${pad(d.getMinutes())}`)}`; };
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const cfg = () => { const c = S.config.main || {}; return {...DEFAULT_CONFIG, ...c, lateByCat:{...DEFAULT_CONFIG.lateByCat, ...(c.lateByCat||{})}, policies:{...DEFAULT_CONFIG.policies, ...(c.policies||{})}, routes:{...DEFAULT_CONFIG.routes, ...(c.routes||{})}}; };
+const isWeekend = s => { const d=parse(s).getDay(); return d===0||d===6; };
+const holidayOn = s => (cfg().holidays||[]).find(h=>h.date===s);
+function dates(from,to){ const out=[]; let d=parse(from); const e=parse(to); while(d<=e){ out.push(ymd(d)); d.setDate(d.getDate()+1);} return out; }
+const workDays = (from,to) => dates(from,to).filter(s=>!isWeekend(s)&&!holidayOn(s)).length;
+const staffList = (all) => Object.values(S.staff).filter(s=>all||s.status!=="Inactive").sort((a,b)=>a.name.localeCompare(b.name));
+const nameOf = id => S.staff[id]?.name || "Unknown";
+async function hash(pw, salt){ const b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt+"|"+pw)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3200); }
+
+/* ---------- storage ---------- */
+function saveLocal(){ try{ localStorage.setItem("staffportal_v1", JSON.stringify(S)); }catch(e){} }
+function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem("staffportal_v1")||"null"); if(d) COLLS.forEach(c=>S[c]=d[c]||{}); }catch(e){} }
+function put(c,id,obj){
+  S[c][id]=obj;
+  if(DB){ DB.doc(`${c}/${id}`).set(obj).catch(e=>toast("Couldn't save: "+(e.message||e.code))); }
+  else saveLocal();
+}
+function del(c,id){ delete S[c][id]; if(DB) DB.doc(`${c}/${id}`).delete().catch(()=>{}); else saveLocal(); }
+function notify(userId, title, text){ if(!userId) return; const id=uid(); put("notifications",id,{id,userId,title,text,at:new Date().toISOString(),read:false}); }
+function audit(text){ const id=uid(); put("audit",id,{id,at:new Date().toISOString(),by:ME?.id||"",byName:ME?.name||"System",text}); }
+
+async function boot(){
+  loadLocal(); // legacy local data, still used by the not-yet-connected staff/attendance/settings screens
+  try{
+    const status = await apiGet("/api/setup/status");
+    NEEDS_SETUP = !!status.needs_setup;
+  }catch(e){ NEEDS_SETUP=false; }
+  if(!NEEDS_SETUP){
+    try{ const me = await apiGet("/api/me"); ME=me.data; }catch(e){ ME=null; }
+  }
+  MODE="api";
+  render();
+}
+function setSession(id){ try{ id?sessionStorage.setItem("sp_user",id):sessionStorage.removeItem("sp_user"); }catch(e){} }
+
+/* ---------- leave logic ---------- */
+function policyFor(st){ return cfg().policies[st.category] || DEFAULT_CONFIG.policies.Tutorial; }
+function balances(st, year, ym){
+  year = year || today().slice(0,4); ym = ym || today().slice(0,7);
+  const pol=policyFor(st);
+  const mine = Object.values(S.leaves).filter(l=>l.staffId===st.id && l.from.slice(0,4)===year);
+  const granted = mine.filter(l=>l.status==="granted");
+  const pend = mine.filter(l=>l.status==="pending"||l.status==="clarify");
+  const sum = (arr,t)=>arr.filter(l=>l.type===t).reduce((a,l)=>a+Number(l.days),0);
+  const byMonth={};
+  granted.filter(l=>l.type==="Short").forEach(l=>{ const m=l.from.slice(0,7); byMonth[m]=(byMonth[m]||0)+1; });
+  let deduct=0; Object.values(byMonth).forEach(n=>{ deduct += Math.max(0,n-pol.shortFree)*pol.shortDeduct; });
+  const casualTaken = sum(granted,"Casual")+deduct, medicalTaken=sum(granted,"Medical");
+  return {pol, casualTaken, medicalTaken, deduct,
+    casualLeft: pol.casual-casualTaken, medicalLeft: pol.medical-medicalTaken,
+    shortMonth: byMonth[ym]||0, casualPending: sum(pend,"Casual"), medicalPending: sum(pend,"Medical"),
+    otherTaken: sum(granted,"Other")};
+}
+function headmaster(){ return staffList().find(s=>s.role==="headmaster"); }
+function hrUsers(){ return staffList().filter(s=>s.role==="hr"); }
+const pill = ([t,c]) => `<span class="pill ${c}">${esc(t)}</span>`;
+/* Leave routing/approval logic (buildSteps, canAct, notifications, etc.) now
+   lives server-side — see LeaveService in the Laravel app. The views below
+   consume LeaveApplicationResource shapes (from_date/to_date/status_label/
+   can_act/...) straight from the API instead of recomputing any of this. */
+function statusPill(l){
+  const map={granted:"p-ok", rejected:"p-bad", cancelled:"p-idle", clarify:"p-info", pending:"p-warn"};
+  return [l.status_label, map[l.status]||"p-warn"];
+}
+function rangeText(l){
+  if(l.type==="Short") return `${fdShort(l.from_date)}, ${t12(l.start_time)}–${t12(l.end_time)}`;
+  return l.from_date===l.to_date ? fd(l.from_date) : `${fdShort(l.from_date)} – ${fd(l.to_date)}`;
+}
+
+/* ---------- attendance logic ---------- */
+let _impKey="", _impSet=new Set();
+function uploadedDates(){ const k=Object.keys(S.imports).join(","); if(k!==_impKey){ _impKey=k; _impSet=new Set(); Object.values(S.imports).forEach(i=>(i.dates||[]).forEach(d=>_impSet.add(d))); } return _impSet; }
+function latestUpload(){ let m=""; uploadedDates().forEach(d=>{ if(d>m) m=d; }); return m; }
+function missingUploads(n){ const out=[]; const d=new Date(); for(let i=0;i<n;i++){ const x=new Date(d); x.setDate(d.getDate()-i); const s=ymd(x); if(!isWeekend(s)&&!holidayOn(s)&&!uploadedDates().has(s)) out.push(s); } return out; }
+function dayStatus(stId, date){
+  const lv = Object.values(S.leaves).filter(l=>l.staffId===stId && l.from<=date && l.to>=date);
+  const g = lv.find(l=>l.status==="granted" && l.type!=="Short");
+  if(g) return [g.days===0.5?`${g.type} Leave (half day)`:`${g.type==="Other"?"Other":g.type} Leave`, "p-info"];
+  if(isWeekend(date)) return ["Weekend","p-idle"];
+  const h=holidayOn(date); if(h) return [`Holiday — ${h.name}`,"p-idle"];
+  const a=S.attendance[`${stId}_${date}`]; const c=cfg();
+  const short = lv.find(l=>l.status==="granted" && l.type==="Short");
+  if(a && (a.in||a.out)){
+    const cat=S.staff[stId]?.category; const lateT=c.lateByCat[cat]||c.lateAfter;
+    const isLate = typeof a.late==="boolean" ? a.late : (a.in && a.in>lateT);
+    let st = isLate ? ["Late","p-warn"] : ["Present","p-ok"];
+    if(a.in && a.out && a.out<c.halfDayBefore) st=["Half Day","p-warn"];
+    if(!a.in) st=["Present (no check-in scan)","p-warn"];
+    if(short) st=[st[0]+" + Short Leave", st[1]];
+    return st;
+  }
+  if(lv.some(l=>l.status==="pending"||l.status==="clarify")) return ["Leave pending","p-warn"];
+  if(uploadedDates().has(date)) return ["Absent","p-bad"];
+  if(date<=today()) return ["Not uploaded yet","p-idle"];
+  return ["—","p-idle"];
+}
+
+
+/* ---------- navigation ---------- */
+const NAV_ICONS = {
+  home: {icon:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>', from:'#56CCF2', to:'#2F80ED'},
+  apply: {icon:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M12 14v5M9.5 16.5h5"/>', from:'#38BDF8', to:'#2563EB'},
+  myleave: {icon:'<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 3v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V3"/><path d="M9 11h6M9 15h6"/>', from:'#7DD3FC', to:'#0EA5E9'},
+  myatt: {icon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>', from:'#67E8F9', to:'#06B6D4'},
+  profile: {icon:'<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/>', from:'#93C5FD', to:'#3B82F6'}
+};
+function navPill(v,t,on,count){
+  const d = NAV_ICONS[v];
+  return `<button class="nav-pill ${on?"on":""}" data-go="${v}" style="--g-from:${d.from};--g-to:${d.to}" aria-label="${esc(t)}">
+    <span class="pill-fill"></span>
+    <span class="pill-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d.icon}</svg></span>
+    <span class="pill-label">${esc(t)}</span>
+    ${count?`<span class="count pill-count">${count}</span>`:""}
+  </button>`;
+}
+function navItems(){
+  const r=ME.role, items=[["home","Today"],["apply","Apply for leave"],["myleave","My leave"],["myatt","My attendance"],["profile","My profile"]];
+  const approver = ["sectional_head","supervisor","headmaster"].includes(r);
+  const approvalsCount = (useFetch("approvalsQueue", ()=>apiGet("/api/leave-applications?scope=approvals").then(r=>r.data))||[]).length || undefined;
+  const hrCount = (r==="hr"||r==="headmaster") ? ((useFetch("hrQueue", ()=>apiGet("/api/leave-applications?scope=hr_verification").then(r=>r.data))||[]).length || undefined) : undefined;
+  const groups=[["Me",items]];
+  if(approver) groups.push(["Approvals",[["approvals","Leave approvals", approvalsCount]]]);
+  if(r==="hr") groups.push(["HR",[["import","Upload attendance"],["verify","HR verification", hrCount],["dash","HR dashboard"],["daily","Daily attendance"],["monthly","Leave report"],["staff","Staff"],["settings","Leave policies"],["auditlog","Audit log"]]]);
+  else if(r==="headmaster") groups.push(["School",[["dash","Staff dashboard"],["daily","Daily attendance"],["monthly","Leave report"],["auditlog","Audit log"],["verify","HR verification (cover)", hrCount]]]);
+  return groups;
+}
+function go(v){ UI.view=v; UI.menu=false; UI.applyErr=""; UI.applyWarn=""; render(); window.scrollTo(0,0); }
+
+/* ---------- render ---------- */
+function render(){
+  const root=$("#root");
+  if(MODE==="loading") return;
+  if(NEEDS_SETUP){ root.innerHTML=setupView(); return; }
+  if(!ME){ root.innerHTML=loginView(); return; }
+  if(ME.must_change_password){ root.innerHTML=`<div class="login"><div class="art sakura"><h1 class="sakura-title"><img src="school-crest.png" alt="" class="sakura-crest"><span class="sakura-wordmark"><span class="sakura-name">Welcome, ${esc(ME.name.split(" ").slice(-1)[0])}</span><span class="sakura-place">S. Thomas' Preparatory School</span></span></h1>
+    <div class="sakura-copy"><p class="sakura-body">Choose your own password before you continue. You'll use it with your employee ID (${esc(ME.emp_id)}) to sign in from now on.</p></div></div>
+    <div class="card"><div class="card-bg" aria-hidden="true"><div class="card-bg-layer"></div><svg class="card-bg-grain" aria-hidden="true"><filter id="cardgrain2"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#cardgrain2)"/></svg></div><form class="form" data-form="firstpw" style="width:min(360px,100%)"><h2>Set your password</h2><label class="fl">New password<input type="password" name="pw" required minlength="6" autocomplete="new-password"></label><label class="fl">Type it again<input type="password" name="pw2" required minlength="6" autocomplete="new-password"></label>${UI.loginErr?`<div class="note bad">${esc(UI.loginErr)}</div>`:""}<button class="flow-btn"><svg class="flow-arrow left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg><span class="flow-text">Save password</span><span class="flow-circle"></span><svg class="flow-arrow right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button><button type="button" class="btn" data-act="logout">Sign out</button></form></div></div>`; return; }
+  const notifs = useFetch("notifications", ()=>apiGet("/api/notifications"));
+  const unread = (notifs && !notifs.__error) ? notifs.unread_count : 0;
+  const groups = navItems();
+  const titles = {home:"Today",apply:"Apply for leave",myleave:"My leave",myatt:"My attendance",profile:"My profile",approvals:"Leave approvals",verify:"HR verification",dash:ME.role==="hr"?"HR dashboard":"Staff dashboard",daily:"Daily attendance report",monthly:"Leave report",import:"Upload fingerprint attendance",staff:"Staff",settings:"Leave policies & settings",auditlog:"Audit log",notifs:"Notifications"};
+  root.innerHTML = `
+  <div class="app">
+    <nav class="side ${UI.menu?"open":""}" aria-label="Main">
+      <div class="school"><b>${esc(SCHOOL)}</b><span>Staff portal</span></div>
+      ${groups.map(([g,its])=>`<div class="navgroup">${g}</div>`+(g==="Me"
+        ? `<div class="nav-pills">${its.map(([v,t,n])=>navPill(v,t,UI.view===v,n)).join("")}</div>`
+        : its.map(([v,t,n])=>`<button class="nav ${UI.view===v?"on":""}" data-go="${v}"><span>${esc(t)}</span>${n?`<span class="count">${n}</span>`:""}</button>`).join(""))).join("")}
+      <div class="me"><b>${esc(ME.name)}</b><small>${esc(ME.designation||"")} · ${esc(ROLES[ME.role])}</small><button data-act="logout">Sign out</button></div>
+    </nav>
+    <main class="main">
+      <div class="topbar">
+        <div class="row"><button class="btn menubtn" data-act="menu" aria-label="Open menu">☰</button>
+          <div><h1>${esc(titles[UI.view]||"")}</h1><div class="sub">${fdLong(today())}</div></div></div>
+        <button class="bell" data-go="notifs" aria-label="Notifications">🔔${unread?`<span class="count">${unread}</span>`:""}</button>
+      </div>
+      ${viewBody()}
+    </main>
+  </div>`;
+  renderModal();
+}
+function viewBody(){
+  switch(UI.view){
+    case "home": return homeView(); case "apply": return applyView(); case "myleave": return myLeaveView();
+    case "myatt": return myAttView(); case "profile": return profileView(); case "approvals": return approvalsView(false);
+    case "verify": return approvalsView(true); case "dash": return dashView(); case "daily": return dailyView();
+    case "monthly": return monthlyView(); case "import": return ME.role==="hr"?importView():homeView(); case "staff": return staffView(); case "settings": return settingsView();
+    case "auditlog": return auditView(); case "notifs": return notifView(); default: return homeView();
+  }
+}
+
+/* ---------- setup & login ---------- */
+function setupView(){
+  return `<div class="login"><div class="art"><div><h1>Staff attendance & leave, in one place</h1><p style="margin-top:1rem">Set up the portal for ${esc(SCHOOL)}. Start with a demo staff list to try every role, or create the first HR account and add real staff.</p></div><div class="reg">Fingerprint attendance · Leave applications · Approvals · HR verification</div></div>
+  <div class="card"><div style="width:min(380px,100%)" class="stack">
+    <div class="panel"><h2>Try it with demo staff</h2><p class="muted small" style="margin-bottom:1rem">Adds 11 sample staff across all roles, a week of attendance and a few leave applications. Every demo password is <b>1234</b>.</p><button class="btn pri" data-act="seed">Load demo staff</button></div>
+    <form class="panel form" data-form="firsthr"><h2>Start with real staff</h2>
+      <label class="fl">Your name<input type="text" name="name" required></label>
+      <label class="fl">Employee ID<input type="text" name="empId" required></label>
+      <label class="fl">Password<input type="password" name="pw" required minlength="4"></label>
+      <button class="btn pri">Create HR account</button></form>
+  </div></div></div>`;
+}
+function loginView(){
+  const demo = DEMO_SEEDED;
+  return `<div class="login"><div class="art sakura">
+      <span class="sakura-tag">Kollupitiya, Colombo</span>
+      <h1 class="sakura-title"><img src="school-crest.png" alt="" class="sakura-crest"><span class="sakura-wordmark"><span class="sakura-name">S. Thomas' Preparatory School</span><span class="sakura-place">Kollupitiya</span></span></h1>
+      <div class="sakura-copy">
+        <div class="sakura-keywords"><span>Attend</span><span>Apply</span><span>Approve</span></div>
+        <h2 class="sakura-headline">Every school day, in one place.</h2>
+        <p class="sakura-body">Mark your attendance, apply for leave and follow every approval without leaving your desk.</p>
+        <p class="sakura-sub">Sign in to continue.</p>
+        <div class="sakura-foot"><span>${esc(SCHOOL)}</span><span>Staff Portal</span><span>${fdLong(today())}</span></div>
+      </div>
+    </div>
+  <div class="card"><div class="card-bg" aria-hidden="true"><div class="card-bg-layer"></div><svg class="card-bg-grain" aria-hidden="true"><filter id="cardgrain"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#cardgrain)"/></svg></div><form class="form" data-form="login"><h2>Sign in</h2>
+    <label class="fl">Employee ID<input type="text" name="empId" required autocomplete="username"></label>
+    <label class="fl">Password<input type="password" name="pw" required autocomplete="current-password"></label>
+    ${UI.loginErr?`<div class="note bad">${esc(UI.loginErr)}</div>`:""}
+    <button class="flow-btn">
+      <svg class="flow-arrow left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      <span class="flow-text">Sign in</span>
+      <span class="flow-circle"></span>
+      <svg class="flow-arrow right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </button>
+    ${demo?`<div class="note info">Demo accounts (password 1234): <b>E001</b> HR · <b>E002</b> Headmaster · <b>E003</b> Sectional Head · <b>E020</b> Support Supervisor · <b>E010</b> Tutorial staff · <b>E021</b> Support staff · <b>E030</b> Admin staff</div>`:""}
+  </form></div></div>`;
+}
+const greet = () => { const h=new Date().getHours(); return h<12?"morning":h<17?"afternoon":"evening"; };
+async function seedDemo(){
+  const resp = await apiPost("/api/setup/demo");
+  const status = await apiGet("/api/setup/status");
+  NEEDS_SETUP = !!status.needs_setup;
+  DEMO_SEEDED = true;
+  render();
+  toast(resp.message || "Demo staff loaded.");
+}
+
+/* ---------- views: staff ---------- */
+function homeView(){
+  const balance = useFetch("balance", ()=>apiGet("/api/me/balance").then(r=>r.data));
+  const myLeaves = useFetch("myLeaves", ()=>apiGet("/api/leave-applications?scope=mine").then(r=>r.data));
+  const notifs = useFetch("notifications", ()=>apiGet("/api/notifications"));
+  const approvalsQueue = useFetch("approvalsQueue", ()=>apiGet("/api/leave-applications?scope=approvals").then(r=>r.data));
+  const hrQueue = (ME.role==="hr"||ME.role==="headmaster") ? useFetch("hrQueue", ()=>apiGet("/api/leave-applications?scope=hr_verification").then(r=>r.data)) : [];
+  if([balance,myLeaves,notifs].some(v=>v===undefined)) return `<div class="empty" style="padding-top:4rem">Loading…</div>`;
+  const recent=(Array.isArray(myLeaves)?myLeaves:[]).slice(0,4);
+  const notifList=(notifs&&notifs.data?notifs.data:[]).slice(0,4);
+  const q=(ME.role==="hr"?(hrQueue||[]):(approvalsQueue||[])).length;
+  return `<div class="stack">
+    <section class="clock" aria-label="Attendance">
+      <div><div class="date">Good ${greet()}, ${esc(ME.name.split(" ")[0])}</div>
+        <p class="muted small" style="margin-top:.7rem; max-width:44ch">Attendance comes from the fingerprint scanner and is uploaded by HR each day. If a day looks wrong, contact HR.</p>
+      </div>
+    </section>
+    ${q?`<div class="note warn"><b>${q} leave application${q>1?"s are":" is"} waiting for you.</b> <button class="btn sm" data-go="${ME.role==="hr"?"verify":"approvals"}" style="margin-left:.5rem">Review</button></div>`:""}
+    <div class="grid g2">
+      <div class="panel"><div class="head"><h2>My leave balance</h2><span class="muted small">${esc(ME.category)} staff · ${today().slice(0,4)}</span></div>${balance.__error?`<div class="empty">${esc(balance.__error)}</div>`:balanceBlock(balance)}</div>
+      <div class="panel"><div class="head"><h2>Recent applications</h2><button class="btn sm" data-go="apply">Apply for leave</button></div>
+        ${recent.length?`<table><tbody>${recent.map(l=>`<tr class="click" tabindex="0" data-leave="${l.id}"><td>${esc(l.type)}<div class="muted small">${rangeText(l)}</div></td><td class="num">${pill(statusPill(l))}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">No applications yet.</div>`}</div>
+    </div>
+    <div class="panel"><div class="head"><h2>Notifications</h2><button class="btn sm" data-go="notifs">See all</button></div>
+      ${notifList.length?notifList.map(n=>`<div class="notif ${n.read?"":"unread"}"><b>${esc(n.title)}</b><div>${esc(n.message)}</div><small class="muted">${stamp(n.created_at)}</small></div>`).join(""):`<div class="empty">You're all caught up.</div>`}</div>
+  </div>`;
+}
+function balanceBlock(b){
+  const bar=(left,tot)=>`<div class="bar"><i style="width:${Math.max(0,Math.min(100,tot?left/tot*100:0))}%"></i></div>`;
+  const pol=b.policy;
+  return `<div class="bal">
+    <div><span class="muted small">Casual left</span><br><b>${b.casual_left}</b> <span class="muted small">of ${pol.casual_days}</span>${bar(b.casual_left,pol.casual_days)}${b.casual_pending?`<div class="small muted" style="margin-top:.3rem">${b.casual_pending} pending</div>`:""}</div>
+    <div><span class="muted small">Medical left</span><br><b>${b.medical_left}</b> <span class="muted small">of ${pol.medical_days}</span>${bar(b.medical_left,pol.medical_days)}${b.medical_pending?`<div class="small muted" style="margin-top:.3rem">${b.medical_pending} pending</div>`:""}</div>
+    <div><span class="muted small">Short leave this month</span><br><b>${b.short_this_month}</b> <span class="muted small">of ${pol.short_leave_free} free</span>${bar(Math.max(0,pol.short_leave_free-b.short_this_month),pol.short_leave_free)}${b.deducted?`<div class="small muted" style="margin-top:.3rem">${b.deducted} casual deducted this year</div>`:""}</div>
+  </div>`;
+}
+function applyView(){
+  const f=UI.applyForm||{type:"Casual",from:today(),to:today(),half:false,startTime:"10:00",endTime:"12:00",reason:""};
+  UI.applyForm=f;
+  const balance = useFetch("balance", ()=>apiGet("/api/me/balance").then(r=>r.data));
+  const chain = useFetch("approvalChain", ()=>apiGet("/api/me/approval-chain").then(r=>r.data));
+  const days = f.type==="Short"?1:(f.half&&f.from===f.to?0.5:(f.from&&f.to&&f.to>=f.from?workDays(f.from,f.to):0));
+  let hint="";
+  if(balance && !balance.__error){
+    if(f.type==="Casual") hint=`You have ${balance.casual_left} casual day${balance.casual_left==1?"":"s"} left.`;
+    if(f.type==="Medical") hint=`You have ${balance.medical_left} medical day${balance.medical_left==1?"":"s"} left. Attach a medical certificate if you have one.`;
+    if(f.type==="Short"){ const n=balance.short_this_month, free=balance.policy.short_leave_free; hint = n>=free?`You've used your ${free} free short leaves this month, so this one deducts ${balance.policy.short_leave_deduct} casual day once granted.`:`${free-n} free short leave${free-n==1?"":"s"} left this month.`; }
+  }
+  if(f.type==="Other") hint="HR will decide how this leave is recorded.";
+  return `<div class="grid g2" style="align-items:start">
+  <form class="panel form" data-form="apply">
+    <div><div class="fl" style="margin-bottom:.4rem">Leave type</div><div class="types">${TYPES.map(t=>`<label><input type="radio" name="type" value="${t}" ${f.type===t?"checked":""}>${t==="Short"?"Short leave":t+" leave"}</label>`).join("")}</div></div>
+    ${f.type==="Short"?`<div class="f2"><label class="fl">Date<input type="date" name="from" value="${f.from}" required></label><div class="f2"><label class="fl">From<input type="time" name="startTime" value="${f.startTime}" required></label><label class="fl">To<input type="time" name="endTime" value="${f.endTime}" required></label></div></div>`
+    :`<div class="f2"><label class="fl">Leave from<input type="date" name="from" value="${f.from}" required></label><label class="fl">Leave to<input type="date" name="to" value="${f.to}" required></label></div>
+      ${f.from===f.to&&(f.type==="Casual"||f.type==="Medical")?`<label class="check"><input type="checkbox" name="half" ${f.half?"checked":""}> Half day only</label>`:""}`}
+    <div class="note info">Number of days: <b>${days}</b>${f.type!=="Short"?" (weekends and school holidays are not counted)":""}. ${esc(hint)}</div>
+    <label class="fl">Reason for leave<textarea name="reason" required>${esc(f.reason)}</textarea></label>
+    ${f.type==="Medical"?`<label class="fl">Medical certificate <span class="h">PDF, JPG or PNG, up to 5 MB</span><input type="file" name="cert" accept=".pdf,.jpg,.jpeg,.png"></label>`:""}
+    ${UI.applyErr?`<div class="note bad">${esc(UI.applyErr)}</div>`:""}
+    <div class="row"><button class="btn pri">Submit application</button><button type="button" class="btn" data-go="myleave">Cancel</button></div>
+  </form>
+  <div class="panel"><h2>Where this goes</h2><p class="muted small" style="margin-bottom:1rem">The route is set by your staff category (${esc(ME.category)}). You can't change or skip approvers.</p>
+    ${chain===undefined?`<div class="muted small">Loading…</div>`:(chain.__error?`<div class="empty">${esc(chain.__error)}</div>`:
+    `<ol class="trail"><li class="done"><i></i><b>You apply</b></li>${chain.map(s=>`<li><i></i><b>${esc(s.kind==="hr"?"HR verification":s.label)}</b>${s.approver_name?`<small>${esc(s.approver_name)}</small>`:""}</li>`).join("")}<li><i></i><b>Leave granted</b><small>Attendance and balance update automatically</small></li></ol>`)}
+  </div></div>`;
+}
+async function submitLeave(form){
+  const fdta=new FormData(form); const f=UI.applyForm;
+  f.reason=fdta.get("reason").trim();
+  const type=f.type; let from=fdta.get("from"), to=type==="Short"?from:fdta.get("to");
+  const err=m=>{ UI.applyErr=m; render(); };
+  if(!from||!to) return err("Choose the leave dates.");
+  if(to<from) return err("The end date is before the start date.");
+  const half = !!fdta.get("half") && from===to;
+  if(type==="Short"){ const st=fdta.get("startTime"), en=fdta.get("endTime"); if(!st||!en||en<=st) return err("Short leave end time must be after the start time."); f.startTime=st; f.endTime=en; }
+  if(!f.reason) return err("Add a reason for the leave.");
+  const body=new FormData();
+  body.append("type",type); body.append("from_date",from); body.append("to_date",to); body.append("reason",f.reason);
+  if(half) body.append("half","1");
+  if(type==="Short"){ body.append("start_time",f.startTime); body.append("end_time",f.endTime); }
+  const file=fdta.get("cert"); if(file && file.size) body.append("certificate",file);
+  let leave;
+  try{ const resp=await apiPost("/api/leave-applications", body); leave=resp.data; }
+  catch(e){ return err(apiErr(e, "Couldn't submit that application.")); }
+  invalidateLeaves();
+  UI.applyForm=null; toast(`Leave #${leave.id} submitted — ${leave.status_label}`); go("myleave");
+}
+function leaveTable(list, opts={}){
+  if(!list.length) return `<div class="empty">${opts.empty||"No applications."}</div>`;
+  return `<div class="scroll"><table><thead><tr><th>#</th>${opts.who?"<th>Staff</th>":""}<th>Type</th><th>Dates</th><th class="num">Days</th><th>Status</th></tr></thead><tbody>
+  ${list.map(l=>`<tr class="click" tabindex="0" data-leave="${l.id}"><td class="muted">${l.id}</td>${opts.who?`<td>${esc(l.staff.name)}<div class="muted small">${esc(l.staff.category||"")}</div></td>`:""}<td>${esc(l.type)}</td><td>${rangeText(l)}</td><td class="num">${l.days}</td><td>${pill(statusPill(l))}${opts.cert&&l.type==="Medical"&&!l.certificate_url?`<div class="small" style="color:var(--warn);margin-top:.2rem">No certificate</div>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function myLeaveView(){
+  const mine = useFetch("myLeaves", ()=>apiGet("/api/leave-applications?scope=mine").then(r=>r.data));
+  const balance = useFetch("balance", ()=>apiGet("/api/me/balance").then(r=>r.data));
+  if(mine===undefined || balance===undefined) return `<div class="empty" style="padding-top:4rem">Loading…</div>`;
+  const list=Array.isArray(mine)?mine:[];
+  const clar=list.filter(l=>l.status==="clarify");
+  return `<div class="stack">${clar.map(l=>`<div class="note info"><b>Leave #${l.id} needs more information.</b> Open it to reply and resubmit.</div>`).join("")}
+  <div class="panel"><div class="head"><h2>My leave history</h2><button class="btn pri sm" data-go="apply">Apply for leave</button></div>${leaveTable(list,{empty:"You haven't applied for leave yet."})}</div>
+  <div class="panel"><h2>Balance</h2>${balance.__error?`<div class="empty">${esc(balance.__error)}</div>`:balanceBlock(balance)}</div></div>`;
+}
+function myAttView(){
+  const m=UI.attMonth||today().slice(0,7); const [y,mo]=m.split("-").map(Number);
+  const last=new Date(y,mo,0).getDate(); const rows=[];
+  for(let d=1; d<=last; d++){ const s=`${m}-${pad(d)}`; if(s>today()) break; const a=S.attendance[`${ME.id}_${s}`]||{}; rows.push({s,a,st:dayStatus(ME.id,s)}); }
+  rows.reverse();
+  const cnt=k=>rows.filter(r=>r.st[0].startsWith(k)).length;
+  return `<div class="stack"><div class="grid g4"><div class="stat"><b>${cnt("Present")}</b><span>Present</span></div><div class="stat"><b>${cnt("Late")}</b><span>Late</span></div><div class="stat"><b>${rows.filter(r=>r.st[1]==="p-info").length}</b><span>On leave</span></div><div class="stat"><b>${cnt("Absent")}</b><span>Absent</span></div></div>
+  <div class="panel"><div class="head"><h2>${MONL[mo-1]} ${y}</h2><input type="month" data-bind="attMonth" value="${m}" style="width:auto"></div>
+  <div class="scroll"><table><thead><tr><th>Date</th><th>Check in</th><th>Check out</th><th>Status</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td>${fdShort(r.s)} <span class="muted small">${DAYL[parse(r.s).getDay()].slice(0,3)}</span></td><td>${r.a.in?t12(r.a.in):"—"}</td><td>${r.a.out?t12(r.a.out):"—"}</td><td>${pill(r.st)}</td></tr>`).join("")||`<tr><td colspan="4" class="empty">No days yet this month.</td></tr>`}</tbody></table></div></div></div>`;
+}
+function profileView(){
+  const approver=["sectional_head","supervisor","headmaster","hr"].includes(ME.role);
+  const fa=ME.first_approver;
+  return `<div class="grid g2" style="align-items:start">
+  <div class="panel"><h2>Details</h2><dl class="kv">
+    <dt>Employee ID</dt><dd>${esc(ME.emp_id)}</dd><dt>Designation</dt><dd>${esc(ME.designation||"")}</dd><dt>Staff category</dt><dd>${esc(ME.category)}</dd>
+    <dt>Section</dt><dd>${esc(ME.department||"")}</dd><dt>Appointed</dt><dd>${fd(ME.appointment_date)}</dd><dt>Role</dt><dd>${esc(ROLES[ME.role])}</dd>
+    <dt>First approver</dt><dd>${fa?esc(fa.name):"—"}</dd></dl>
+    <p class="muted small">Category, designation, role and approver can only be changed by HR.</p></div>
+  <div class="stack">
+    <form class="panel form" data-form="profile"><h2>Contact details</h2>
+      <label class="fl">Email<input type="email" name="email" value="${esc(ME.email||"")}"></label>
+      <label class="fl">Mobile number<input type="text" name="mobile" value="${esc(ME.mobile||"")}"></label>
+      ${approver?`<h3 style="margin-top:.5rem">Acting approver while I'm away</h3>
+      <p class="muted small">Picking a colleague here isn't available yet — this needs a staff directory, which isn't wired up for non-HR roles.</p>`:""}
+      <div><button class="btn pri">Save changes</button></div></form>
+    <form class="panel form" data-form="password"><h2>Change password</h2>
+      <label class="fl">Current password<input type="password" name="old" required></label>
+      <label class="fl">New password<input type="password" name="pw" required minlength="4"></label>
+      <div><button class="btn">Change password</button></div></form>
+  </div></div>`;
+}
+
+/* ---------- approvals ---------- */
+function approvalsView(hr){
+  const key = hr?"hrQueue":"approvalsQueue";
+  const q = useFetch(key, ()=>apiGet(`/api/leave-applications?scope=${hr?"hr_verification":"approvals"}`).then(r=>r.data));
+  if(q===undefined) return `<div class="empty" style="padding-top:4rem">Loading…</div>`;
+  const list=q&&!q.__error?q:[];
+  return `<div class="stack"><div class="panel"><div class="head"><h2>${hr?"Waiting for HR verification":"Waiting for your approval"}</h2><span class="muted small">${list.length} application${list.length==1?"":"s"}</span></div>
+  ${q.__error?`<div class="empty">${esc(q.__error)}</div>`:leaveTable(list,{who:true,cert:hr,empty:hr?"Nothing to verify right now.":"Nothing waiting for you right now."})}</div></div>`;
+}
+function leaveModal(id){
+  const l = useFetch("leaveDetail:"+id, ()=>apiGet(`/api/leave-applications/${id}`).then(r=>r.data));
+  if(l===undefined) return `<div class="modal" data-close="1"><div class="box"><div class="empty">Loading…</div></div></div>`;
+  if(l.__error) return `<div class="modal" data-close="1"><div class="box"><div class="empty">${esc(l.__error)}</div></div></div>`;
+  const st=l.staff;
+  const trail=`<ol class="trail"><li class="done"><i></i><b>${esc(st.name)} applied</b><small>${stamp(l.created_at)}</small></li>
+    ${l.steps.map((x,i)=>{ const c=x.status==="approved"?"done":x.status==="rejected"?"no":(i===l.current_step&&(l.status==="pending"||l.status==="clarify"))?"now":""; const lbl=x.kind==="hr"?"HR verification":x.label;
+      return `<li class="${c}"><i></i><b>${esc(lbl)} ${x.status==="approved"?"✓":x.status==="rejected"?"✗":""}</b><small>${x.acted_by?`${esc(x.acted_by.name)} · ${stamp(x.acted_at)}`:(x.approver?esc(x.approver.name):"Any HR officer")}${c==="now"?" · waiting":""}</small>${x.comment?`<q>${esc(x.comment)}</q>`:""}</li>`; }).join("")}
+    <li class="${l.status==="granted"?"done":l.status==="rejected"||l.status==="cancelled"?"no":""}"><i></i><b>${l.status==="rejected"?"Rejected":l.status==="cancelled"?"Cancelled":"Leave granted"}</b></li></ol>`;
+  const hist=(l.histories||[]).filter(h=>/Clarif|Resubmit|Cancel/.test(h.action));
+  let actions="";
+  if(l.can_act){ const step=l.steps[l.current_step]; const isHR=step&&step.kind==="hr";
+    actions=`<div class="form" style="margin-top:1rem"><label class="fl">Comment <span class="h">Required to reject or ask for clarification</span><textarea id="cmt"></textarea></label>
+    <div class="row"><button class="btn pri" data-decide="approve" data-id="${l.id}">${isHR?"Verify & grant leave":"Approve"}</button><button class="btn bad" data-decide="reject" data-id="${l.id}">Reject</button><button class="btn" data-decide="clarify" data-id="${l.id}">Request clarification</button></div></div>`;
+  }
+  if(l.can_resubmit) actions=`<div class="form" style="margin-top:1rem"><label class="fl">Your reply / updated reason<textarea id="cmt">${esc(l.reason)}</textarea></label>${l.type==="Medical"?`<label class="fl">Medical certificate<input type="file" id="certfile" accept=".pdf,.jpg,.jpeg,.png"></label>`:""}<div class="row"><button class="btn pri" data-decide="resubmit" data-id="${l.id}">Resubmit</button><button class="btn bad" data-decide="cancel" data-id="${l.id}">Cancel application</button></div></div>`;
+  else if(l.can_cancel) actions=`<div class="row" style="margin-top:1rem"><button class="btn bad" data-decide="cancel" data-id="${l.id}">Cancel application</button></div>`;
+  else if(l.can_hr_cancel) actions=`<div class="form" style="margin-top:1rem"><label class="fl">Reason for cancelling granted leave<textarea id="cmt"></textarea></label><div><button class="btn bad" data-decide="hrcancel" data-id="${l.id}">Cancel granted leave &amp; restore balance</button></div></div>`;
+  return `<div class="modal" data-close="1"><div class="box" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <div class="head"><div><h2 id="mt">Leave #${l.id} — ${esc(l.type)}</h2><div style="margin-top:.4rem">${pill(statusPill(l))}</div></div><button class="x" data-close="1" aria-label="Close">×</button></div>
+    <dl class="kv"><dt>Staff</dt><dd>${esc(st.name)} <span class="muted">(${esc(st.emp_id)})</span></dd><dt>Designation</dt><dd>${esc(st.designation||"")} · ${esc(st.category)}</dd>
+    <dt>Dates</dt><dd>${rangeText(l)}</dd><dt>Days</dt><dd>${l.days}</dd><dt>Reason</dt><dd>${esc(l.reason)}</dd>
+    ${l.type==="Medical"?`<dt>Certificate</dt><dd>${l.certificate_url?`<a href="${l.certificate_url}" target="_blank" rel="noopener">View certificate</a>`:`<span style="color:var(--warn)">Not attached</span>`}</dd>`:""}</dl>
+    ${hist.length?`<div class="note info small" style="margin-bottom:1rem">${hist.map(h=>`<div><b>${esc(h.action)}</b> — ${esc(h.by_staff?h.by_staff.name:"")}, ${stamp(h.created_at)}${h.comment?`: ${esc(h.comment)}`:""}</div>`).join("")}</div>`:""}
+    <h3>Approval history</h3>${trail}${actions}</div></div>`;
+}
+async function decide(kind,id){
+  const c=($("#cmt")?.value||"").trim();
+  if((kind==="reject"||kind==="clarify"||kind==="hrcancel") && !c){ toast("Add a comment first."); $("#cmt")?.focus(); return; }
+  try{
+    if(kind==="approve"||kind==="reject"||kind==="clarify"){
+      await apiPost(`/api/leave-applications/${id}/decide`, {action:kind, comment:c||undefined});
+      toast(kind==="approve"?"Approved":kind==="reject"?"Application rejected":"Sent back for clarification");
+    } else if(kind==="resubmit"){
+      const body=new FormData(); if(c) body.append("reason",c);
+      const f=$("#certfile")?.files?.[0]; if(f) body.append("certificate",f);
+      await apiPost(`/api/leave-applications/${id}/resubmit`, body);
+      toast("Resubmitted");
+    } else if(kind==="cancel"){
+      await apiPost(`/api/leave-applications/${id}/cancel`);
+      toast("Application cancelled");
+    } else if(kind==="hrcancel"){
+      await apiPost(`/api/leave-applications/${id}/hr-cancel`, {comment:c});
+      toast("Leave cancelled and balance restored");
+    }
+  }catch(e){ toast(apiErr(e,"That didn't go through.")); return; }
+  invalidateLeaves(); invalidate("notifications");
+  UI.modal=null; render();
+}
+
+/* ---------- HR / management ---------- */
+function dashView(){
+  const d=UI.dashDate||latestUpload()||today(), all=staffList();
+  const st=all.map(s=>({s,st:dayStatus(s.id,d)}));
+  const present=st.filter(x=>/^(Present|Late|Half)/.test(x.st[0])).length, late=st.filter(x=>x.st[0].startsWith("Late")).length;
+  const absent=st.filter(x=>x.st[0]==="Absent").length;
+  const onLeave=all.map(s=>({s,st:dayStatus(s.id,today())})).filter(x=>x.st[1]==="p-info");
+  const pendHR=Object.values(S.leaves).filter(l=>l.status==="pending"&&curStep(l)?.kind==="hr").length;
+  const pendAll=Object.values(S.leaves).filter(l=>l.status==="pending").length;
+  const miss=missingUploads(7).filter(x=>x<today());
+  const cats=["Tutorial","Support","Admin"].map(c=>{ const ss=all.filter(s=>s.category===c); let ca=0,me=0,sh=0; ss.forEach(s=>{const b=balances(s); ca+=b.casualTaken; me+=b.medicalTaken; sh+=b.shortMonth;}); return {c,n:ss.length,ca,me,sh}; });
+  return `<div class="stack">
+  ${miss.length&&ME.role==="hr"?`<div class="note warn"><b>Not uploaded yet:</b> ${miss.map(fdShort).join(", ")}. <button class="btn sm" data-go="import" style="margin-left:.5rem">Upload attendance</button></div>`:""}
+  <div class="panel"><div class="head"><h2>Attendance on ${fdLong(d)}</h2><input type="date" data-bind="dashDate" value="${d}" style="width:auto"></div>
+  ${uploadedDates().has(d)?"":`<div class="note info" style="margin-bottom:1rem">Fingerprint attendance for this date hasn't been uploaded, so nobody is counted as absent yet.</div>`}
+  <div class="grid g4"><div class="stat"><b>${all.length}</b><span>Total staff</span></div><div class="stat"><b>${present}</b><span>Present</span></div><div class="stat"><b>${late}</b><span>Late</span></div><div class="stat"><b>${absent}</b><span>Absent</span></div></div></div>
+  <div class="grid g3"><div class="stat"><b>${onLeave.length}</b><span>On leave today</span></div><div class="stat"><b>${pendHR}</b><span>Waiting for HR verification</span></div><div class="stat"><b>${pendAll}</b><span>Leave applications pending</span></div></div>
+  <div class="grid g2" style="align-items:start">
+    <div class="panel"><h2>On leave today</h2>${onLeave.length?`<table><tbody>${onLeave.map(x=>`<tr><td>${esc(x.s.name)}<div class="muted small">${esc(x.s.designation)}</div></td><td class="num">${pill(x.st)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Nobody is on leave today.</div>`}</div>
+    <div class="panel"><h2>Leave taken this year</h2><div class="scroll"><table><thead><tr><th>Category</th><th class="num">Staff</th><th class="num">Casual</th><th class="num">Medical</th><th class="num">Short (month)</th></tr></thead><tbody>${cats.map(r=>`<tr><td>${r.c}</td><td class="num">${r.n}</td><td class="num">${r.ca}</td><td class="num">${r.me}</td><td class="num">${r.sh}</td></tr>`).join("")}</tbody></table></div></div>
+  </div></div>`;
+}
+function dailyRows(d){ return staffList().map(s=>{ const a=S.attendance[`${s.id}_${d}`]||{}; return {s,a,st:dayStatus(s.id,d)}; }); }
+function dailyView(){
+  const d=UI.reportDate||latestUpload()||today(); const rows=dailyRows(d);
+  const c=f=>rows.filter(f).length; const hr=ME.role==="hr";
+  return `<div class="panel"><div class="head"><div><h2>${esc(SCHOOL)}</h2><div class="muted small">Staff attendance report · ${fdLong(d)}</div></div>
+    <div class="row"><input type="date" data-bind="reportDate" value="${d}" style="width:auto">${DL?`<button class="btn" data-act="csvdaily">Export CSV (Excel)</button>`:""}</div></div>
+    ${uploadedDates().has(d)?"":`<div class="note info" style="margin-bottom:1rem">Fingerprint attendance for this date hasn't been uploaded yet. ${hr?`<button class="btn sm" data-go="import" style="margin-left:.4rem">Upload attendance</button>`:""}</div>`}
+    <div class="grid g4" style="margin-bottom:1rem"><div class="stat"><b>${c(r=>/^(Present|Half)/.test(r.st[0]))}</b><span>Present</span></div><div class="stat"><b>${c(r=>r.st[0].startsWith("Late"))}</b><span>Late</span></div><div class="stat"><b>${c(r=>r.st[1]==="p-info")}</b><span>On leave</span></div><div class="stat"><b>${c(r=>r.st[0]==="Absent")}</b><span>Absent</span></div></div>
+    <div class="scroll"><table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Check in</th><th>Check out</th><th>Status</th>${hr?"<th></th>":""}</tr></thead><tbody>
+    ${rows.map(r=>`<tr><td class="muted">${esc(r.s.empId)}</td><td>${esc(r.s.name)}</td><td>${esc(r.s.category)}</td><td>${r.a.in?t12(r.a.in):"—"}</td><td>${r.a.out?t12(r.a.out):"—"}</td><td>${pill(r.st)}${r.a.source==="manual"?`<div class="muted small" style="margin-top:.2rem">Corrected by HR</div>`:""}</td>${hr?`<td class="num"><button class="btn sm" data-att="${r.s.id}|${d}">Correct</button></td>`:""}</tr>`).join("")}</tbody></table></div></div>`;
+}
+function attModal(key){
+  const [sid,d]=key.split("|"); const s=S.staff[sid]; const a=S.attendance[`${sid}_${d}`]||{};
+  return `<div class="modal" data-close="1"><form class="box form" data-form="att" data-key="${esc(key)}" role="dialog" aria-modal="true">
+    <div class="head"><div><h2>Correct attendance</h2><div class="muted small">${esc(s?.name)} · ${fdLong(d)}</div></div><button type="button" class="x" data-close="1" aria-label="Close">×</button></div>
+    <p class="muted small">Use this when someone forgot to scan or the scanner missed them. The change is recorded in the audit log, and a later upload for this date won't overwrite it.</p>
+    <div class="f2"><label class="fl">Check in<input type="time" name="in" value="${esc(a.in||"")}"></label><label class="fl">Check out<input type="time" name="out" value="${esc(a.out||"")}"></label></div>
+    <label class="fl">Reason<input type="text" name="reason" required placeholder="e.g. Forgot to scan in — confirmed by Sectional Head"></label>
+    <div class="row"><button class="btn pri">Save correction</button>${a.in||a.out?`<button type="button" class="btn bad" data-act="clearatt" data-key="${esc(key)}">Remove record (mark absent)</button>`:""}<button type="button" class="btn" data-close="1">Cancel</button></div></form></div>`;
+}
+function monthlyRows(m){
+  return staffList().map(s=>{ const ls=Object.values(S.leaves).filter(l=>l.staffId===s.id&&l.status==="granted"&&l.from.slice(0,7)===m); const sum=t=>ls.filter(l=>l.type===t).reduce((a,l)=>a+Number(l.days),0); const b=balances(s,m.slice(0,4),m); return {s,ca:sum("Casual"),me:sum("Medical"),sh:ls.filter(l=>l.type==="Short").length,ot:sum("Other"),b}; });
+}
+function monthlyView(){
+  const m=UI.reportMonth||today().slice(0,7); const rows=monthlyRows(m); const [y,mo]=m.split("-").map(Number);
+  return `<div class="panel"><div class="head"><div><h2>Monthly leave report</h2><div class="muted small">${MONL[mo-1]} ${y} · granted leave only</div></div>
+    <div class="row"><input type="month" data-bind="reportMonth" value="${m}" style="width:auto">${DL?`<button class="btn" data-act="csvmonthly">Export CSV (Excel)</button>`:""}</div></div>
+    <div class="scroll"><table><thead><tr><th>Employee</th><th>Category</th><th class="num">Casual</th><th class="num">Medical</th><th class="num">Short</th><th class="num">Other</th><th class="num">Casual left (year)</th><th class="num">Medical left (year)</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.s.name)}<div class="muted small">${esc(r.s.empId)}</div></td><td>${esc(r.s.category)}</td><td class="num">${r.ca}</td><td class="num">${r.me}</td><td class="num">${r.sh}</td><td class="num">${r.ot}</td><td class="num">${r.b.casualLeft}</td><td class="num">${r.b.medicalLeft}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+async function exportCSV(name, header, rows){
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const data="﻿"+[header,...rows].map(r=>r.map(q).join(",")).join("\r\n");
+  try{ await DL.save({filename:name, data}); }catch(e){ if(e.code!=="declined") toast("Couldn't export: "+(e.message||e.code)); }
+}
+/* ---------- fingerprint import ---------- */
+function parseCSV(text){
+  text=text.replace(/^﻿/,"");
+  const first=text.split(/\r?\n/)[0]||""; const delim=[",",";","\t"].sort((a,b)=>first.split(b).length-first.split(a).length)[0];
+  const rows=[]; let row=[], cur="", q=false;
+  for(let i=0;i<text.length;i++){ const ch=text[i];
+    if(q){ if(ch==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else q=false; } else cur+=ch; }
+    else if(ch==='"') q=true; else if(ch===delim){ row.push(cur); cur=""; }
+    else if(ch==="\n"||ch==="\r"){ if(ch==="\r"&&text[i+1]==="\n") i++; row.push(cur); rows.push(row); row=[]; cur=""; }
+    else cur+=ch; }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(c=>String(c).trim()!==""));
+}
+function loadScript(src){ return new Promise((res,rej)=>{ const e=document.createElement("script"); e.src=src; e.onload=res; e.onerror=()=>rej(new Error("couldn't load the PDF reader")); document.head.appendChild(e); }); }
+async function pdfLib(){
+  if(!window.pdfjsLib){ await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"); for(let i=0;i<100&&!window.pdfjsLib;i++) await new Promise(r=>setTimeout(r,100)); }
+  if(!window.pdfjsLib) throw new Error("couldn't load the PDF reader.");
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  return window.pdfjsLib;
+}
+async function readPdfReport(file){
+  const lib=await pdfLib(); const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+  let text=""; for(let i=1;i<=doc.numPages;i++){ const pg=await doc.getPage(i); const tc=await pg.getTextContent(); text+=" "+tc.items.map(x=>x.str).join(" "); }
+  text=text.replace(/\s+/g," ");
+  const T="(\\d{1,2}:\\d{2}(?::\\d{2})?|-)";
+  const re=new RegExp("(\\d{4}[\\/-]\\d{2}[\\/-]\\d{2})\\s+([A-Za-z][^0-9]*?)\\s*(\\d{1,8})\\s+(.*?)\\s+(\\S+)\\s+"+T+"\\s+"+T+"\\s+([A-Za-z][A-Za-z ,]*?|-)\\s+(\\d+:\\d{2}:\\d{2})\\s+(\\d+:\\d{2}:\\d{2})\\s+(\\d+:\\d{2}:\\d{2})","g");
+  const rows=[...text.matchAll(re)].map(m=>[m[1],m[2].trim(),m[3],m[4].trim(),m[6]==="-"?"":m[6],m[7]==="-"?"":m[7],m[8]==="-"?"":m[8]]);
+  if(!rows.length) throw new Error("no attendance rows were found in this PDF.");
+  return [["Date","Name","User ID","Department","In","Out","Exception"],...rows];
+}
+async function readSheet(file){
+  const name=file.name.toLowerCase();
+  if(name.endsWith(".pdf")) return readPdfReport(file);
+  if(name.endsWith(".xlsx")||name.endsWith(".xls")){
+    if(!window.XLSX) throw new Error("The Excel reader didn't load. Save the report as CSV and upload that instead.");
+    const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
+    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:""}).filter(r=>r.some(c=>String(c).trim()!==""));
+  }
+  return parseCSV(await file.text());
+}
+const COLKEYS={id:"Fingerprint user ID",name:"Name",dept:"Department",exc:"Exception (late, absence)",dt:"Date & time (one column)",date:"Date",time:"Punch time",in:"Check in / first in",out:"Check out / last out",event:"Event / result"};
+function guessMap(h){
+  const m={id:-1,name:-1,dept:-1,exc:-1,dt:-1,date:-1,time:-1,in:-1,out:-1,event:-1}; const L=h.map(x=>String(x).trim().toLowerCase());
+  const find=(re,not)=>L.findIndex((x,i)=>re.test(x) && !Object.values(m).includes(i) && !(not&&not.test(x)));
+  m.id=find(/(user|emp(loyee)?|staff|person)\s*(id|no\.?|number|code)|^id$|^user$|^emp\s*no/);
+  m.exc=find(/exception/); m.dept=find(/department|dept/);
+  m.dt=find(/date\s*[\/&]?\s*time|datetime|timestamp/);
+  m.in=find(/first\s*in|in\s*time|check.?in|clock.?in|^in$|punch.?in|arrival|time\s*in/);
+  m.out=find(/last\s*out|out\s*time|check.?out|clock.?out|^out$|punch.?out|departure|time\s*out/);
+  m.date=find(/date|day/);
+  m.time=find(/time/);
+  m.name=find(/name/, /user\s*id/);
+  m.event=find(/event|result|status/);
+  return m;
+}
+function headerRow(rows){ for(let i=0;i<Math.min(10,rows.length);i++){ const t=rows[i].map(x=>String(x).toLowerCase()).join("|"); if(/id/.test(t)&&/(date|time)/.test(t)) return i; } return 0; }
+function normDate(v, order){
+  if(v instanceof Date && !isNaN(v)) return ymd(v);
+  let s=String(v??"").trim(); if(!s) return null;
+  s=s.split(/[T ]/)[0].length>=6 ? s.split(/T| (?=\d{1,2}:)/)[0].trim() : s;
+  let m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/); if(m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+  if(m){ let a=+m[1], b=+m[2], y=+m[3]; if(y<100) y+=2000; let dd,mm; if(a>12){dd=a;mm=b;} else if(b>12){mm=a;dd=b;} else if(order==="MDY"){mm=a;dd=b;} else {dd=a;mm=b;} if(mm<1||mm>12||dd<1||dd>31) return null; return `${y}-${pad(mm)}-${pad(dd)}`; }
+  m=s.match(/^(\d{1,2})[-\/ .]([A-Za-z]{3})[A-Za-z]*[-\/ .,]*(\d{2,4})/); if(m){ const mi=MON.findIndex(x=>x.toLowerCase()===m[2].toLowerCase()); if(mi<0) return null; let y=+m[3]; if(y<100) y+=2000; return `${y}-${pad(mi+1)}-${pad(m[1])}`; }
+  m=s.match(/^([A-Za-z]{3})[A-Za-z]*[ .]+(\d{1,2}),?\s+(\d{4})/); if(m){ const mi=MON.findIndex(x=>x.toLowerCase()===m[1].toLowerCase()); if(mi<0) return null; return `${m[3]}-${pad(mi+1)}-${pad(m[2])}`; }
+  return null;
+}
+function normTime(v){
+  if(v instanceof Date && !isNaN(v)) return `${pad(v.getHours())}:${pad(v.getMinutes())}`;
+  if(typeof v==="number" && v>=0 && v<1){ const mins=Math.round(v*1440); return `${pad(Math.floor(mins/60))}:${pad(mins%60)}`; }
+  const s=String(v??""); const m=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?m\.?)?/i); if(!m) return "";
+  let h=+m[1]; const ap=(m[3]||"").toLowerCase(); if(ap.startsWith("p")&&h<12) h+=12; if(ap.startsWith("a")&&h===12) h=0; if(h>23) return "";
+  return `${pad(h)}:${m[2]}`;
+}
+const normId = x => { let v=String(x??"").trim(); const m=v.match(/^([A-Za-z]*\d+)\s*[\(\-–:]/); if(m) v=m[1]; return v.replace(/\.0+$/,"").replace(/^0+(?=.)/,"").toLowerCase(); };
+function buildPreview(P){
+  const m=P.map; const byId={}; staffList(true).forEach(s=>{ byId[normId(s.bioId||s.empId)]=s; if(s.bioId) byId[normId(s.empId)]=byId[normId(s.empId)]||s; });
+  const recs={}, unmatched={}; let bad=0, failed=0, future=0, used=0;
+  const summary = m.in>=0 || m.out>=0;
+  P.rows.forEach(r=>{
+    const idRaw=m.id>=0?r[m.id]:""; if(String(idRaw).trim()===""){ return; }
+    const dateSrc = m.dt>=0 ? r[m.dt] : (m.date>=0 ? r[m.date] : "");
+    const date=normDate(dateSrc,P.order); if(!date){ bad++; return; }
+    if(date>today()){ future++; return; }
+    const st=byId[normId(idRaw)];
+    if(!st){ const k=normId(idRaw); if(!unmatched[k]) unmatched[k]={id:String(idRaw).trim().replace(/\s*[\(\-–:].*$/,""),name:m.name>=0?String(r[m.name]).trim():"",dept:m.dept>=0?String(r[m.dept]).trim():""}; return; }
+    const key=`${st.id}_${date}`; const rec=recs[key]||(recs[key]={staffId:st.id,date,in:"",out:"",punches:[]});
+    if(m.exc>=0){ const ex=String(r[m.exc]||""); rec.late=/late\s*in/i.test(ex); }
+    if(summary){
+      const i=m.in>=0?normTime(r[m.in]):"", o=m.out>=0?normTime(r[m.out]):"";
+      if(i) rec.punches.push(i); if(o) rec.punches.push(o); used++;
+    } else {
+      if(m.event>=0 && /fail|denied|invalid|unregistered|not\s*match|timeout/i.test(String(r[m.event]))){ failed++; return; }
+      const t=normTime(m.dt>=0?r[m.dt]:(m.time>=0?r[m.time]:(m.date>=0?r[m.date]:""))); if(!t){ bad++; return; }
+      rec.punches.push(t); used++;
+    }
+  });
+  const mins=t=>{ const [h,mm]=t.split(":").map(Number); return h*60+mm; };
+  Object.entries(recs).forEach(([k,r])=>{ r.punches.sort(); r.in=r.punches[0]||""; r.out=r.punches.length>1?r.punches[r.punches.length-1]:"";
+    if(r.in&&r.out&&mins(r.out)-mins(r.in)<60){ r.out=""; r.dupes=true; }
+    if(r.in&&r.in>="12:00"&&!r.out){ r.out=r.in; r.in=""; }
+    if(!r.in&&!r.out) delete recs[k]; });
+  const dupes=Object.values(recs).filter(r=>r.dupes).length;
+  const dts=[...new Set(Object.values(recs).map(r=>r.date))].sort();
+  const manual=Object.keys(recs).filter(k=>S.attendance[k]?.source==="manual").length;
+  const replacing=Object.keys(recs).filter(k=>S.attendance[k] && S.attendance[k].source!=="manual").length;
+  return {recs,dates:dts,unmatched,bad,failed,future,used,manual,replacing,summary,dupes,
+    noOut:Object.values(recs).filter(r=>r.in&&!r.out).length};
+}
+function importView(){
+  const P=UI.imp;
+  const hist=Object.values(S.imports).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,20);
+  const miss=missingUploads(14).filter(x=>x<today());
+  const unlinked=staffList().filter(s=>!s.bioId).length;
+  if(!P) return `<div class="stack">
+    ${miss.length?`<div class="note warn"><b>Not uploaded yet:</b> ${miss.map(fdShort).join(", ")}</div>`:`<div class="note info">All working days in the last two weeks have been uploaded.</div>`}
+    <div class="grid g2" style="align-items:start">
+    <div class="panel"><h2>Upload the BioStar report</h2>
+      <p class="muted small" style="margin-bottom:1rem">Upload the BioStar Daily Report exactly as you get it now (PDF is fine). Everyone's attendance updates at once. You can upload one day or several days in the same file.</p>
+      <label class="fl">Attendance file <span class="h">The BioStar Daily Report as PDF, CSV or Excel</span><input type="file" id="impfile" accept=".pdf,.csv,.txt,.xlsx,.xls"></label>
+      ${UI.impErr?`<div class="note bad" style="margin-top:1rem">${esc(UI.impErr)}</div>`:""}
+    </div>
+    <div class="panel"><h2>How it works</h2>
+      <p class="small" style="margin-bottom:.6rem">Each row is matched to a staff member by the <b>fingerprint user ID</b> set on their staff record (or their employee ID if none is set).</p>
+      <p class="small" style="margin-bottom:.6rem">BioStar's own "Late In" and "Absence" results are used as they are. A report made in the morning has no check-outs yet; uploading a later report for the same date adds them.</p>
+      <p class="small" style="margin-bottom:.6rem">Once a date is uploaded, anyone with no scan that day shows as <b>Absent</b>, unless they have approved leave, which always takes priority.</p>
+      ${unlinked?`<p class="small" style="color:var(--warn)">${unlinked} staff member${unlinked>1?"s don't":" doesn't"} have a fingerprint ID yet, so their employee ID will be used. <button class="btn sm" data-go="staff">Check staff</button></p>`:""}
+      ${DL?`<button class="btn sm" data-act="sampleimp" style="margin-top:.4rem">Download a sample file</button>`:""}
+    </div></div>
+    <div class="panel"><h2>Upload history</h2>${hist.length?`<div class="scroll"><table><thead><tr><th>Uploaded</th><th>File</th><th>Dates</th><th class="num">Records</th><th>Unmatched IDs</th><th>By</th></tr></thead><tbody>${hist.map(h=>`<tr><td style="white-space:nowrap">${stamp(h.at)}</td><td>${esc(h.fileName)}</td><td>${h.dates.length>3?`${fdShort(h.dates[0])} – ${fdShort(h.dates[h.dates.length-1])} (${h.dates.length} days)`:h.dates.map(fdShort).join(", ")}</td><td class="num">${h.records}</td><td>${h.unmatched?.length?esc(h.unmatched.join(", ")):"—"}</td><td>${esc(h.byName)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">No uploads yet.</div>`}</div>
+  </div>`;
+  const R=buildPreview(P); const h=P.header;
+  const sel=k=>`<label class="fl">${COLKEYS[k]}<select data-map="${k}"><option value="-1">— not in file —</option>${h.map((c,i)=>`<option value="${i}" ${P.map[k]===i?"selected":""}>${esc(String(c)||`Column ${i+1}`)}</option>`).join("")}</select></label>`;
+  const perDate=R.dates.map(d=>{ const n=Object.values(R.recs).filter(r=>r.date===d).length; const lv=staffList().filter(s=>dayStatus(s.id,d)[1]==="p-info").length; const abs=Math.max(0,staffList().length-n-lv); return {d,n,lv,abs,wk:isWeekend(d)||!!holidayOn(d)}; });
+  const unm=Object.entries(R.unmatched);
+  const ok=R.dates.length && P.map.id>=0;
+  return `<div class="stack"><div class="panel"><div class="head"><div><h2>${esc(P.fileName)}</h2><div class="muted small">${P.rows.length} rows · ${R.summary?"Summary format (in/out per person)":"Event log format (every scan)"}</div></div><button class="btn" data-act="cancelimp">Choose a different file</button></div>
+    <p class="muted small" style="margin-bottom:.8rem">Check which column holds each value. These were detected automatically.</p>
+    <div class="grid g4">${sel("id")}${sel("name")}${sel("dept")}${sel("date")}${sel("in")}${sel("out")}${sel("exc")}${sel("dt")}${sel("time")}${sel("event")}</div>
+    <label class="fl" style="margin-top:1rem;max-width:300px">Date format in the file<select data-imporder><option value="DMY" ${P.order==="DMY"?"selected":""}>Day / month / year (30/09/2026)</option><option value="MDY" ${P.order==="MDY"?"selected":""}>Month / day / year (09/30/2026)</option></select></label>
+  </div>
+  <div class="panel"><h2>Preview</h2>
+    ${P.map.id<0?`<div class="note bad">Choose the column that holds the fingerprint user ID.</div>`:""}
+    ${P.map.id>=0&&!R.dates.length?`<div class="note bad">No usable dates were found. Check the date column and date format above.</div>`:""}
+    ${perDate.length?`<div class="scroll"><table><thead><tr><th>Date</th><th class="num">Staff with scans</th><th class="num">On approved leave</th><th class="num">Will show absent</th></tr></thead><tbody>${perDate.map(x=>`<tr><td>${fdLong(x.d)}${x.wk?` ${pill(["Weekend / holiday","p-idle"])}`:""}${uploadedDates().has(x.d)?` <span class="muted small">(already uploaded — will update)</span>`:""}</td><td class="num">${x.n}</td><td class="num">${x.lv}</td><td class="num">${x.wk?"—":x.abs}</td></tr>`).join("")}</tbody></table></div>`:""}
+    <div class="grid g2" style="margin-top:1rem">
+      ${unm.length?`<div class="note warn"><b>${unm.length} fingerprint ID${unm.length>1?"s aren't":" isn't"} linked to any staff member</b> and will be skipped: ${unm.slice(0,12).map(([k,u])=>esc(u.id)+(u.name?` (${esc(u.name)})`:"")).join(", ")}${unm.length>12?"…":""}.
+        <div style="margin-top:.6rem">${unm.every(([k,u])=>u.name)?`<button class="btn sm" data-act="createstaff">Add these ${unm.length} people as staff</button> <span class="small">Uses the name, ID and department from the report.</span>`:"Add the fingerprint ID on their staff records, then choose the file again."}</div></div>`:`<div class="note info">Every ID in the file matched a staff member.</div>`}
+      <div class="note info">${Object.keys(R.recs).length} attendance record${Object.keys(R.recs).length==1?"":"s"} ready.${R.replacing?` ${R.replacing} existing record${R.replacing>1?"s":""} will be updated.`:""}${R.manual?` ${R.manual} HR correction${R.manual>1?"s":""} will be kept.`:""}${R.failed?` ${R.failed} failed scan${R.failed>1?"s":""} ignored.`:""}${R.noOut?` ${R.noOut} ${R.noOut>1?"people have":"person has"} no check-out yet, which is normal for a morning report — upload a later report to add check-outs.`:""}${R.dupes?` ${R.dupes} repeated scan${R.dupes>1?"s":""} within an hour of check-in ignored.`:""}${R.bad?` ${R.bad} row${R.bad>1?"s":""} couldn't be read.`:""}${R.future?` ${R.future} future-dated row${R.future>1?"s":""} ignored.`:""}</div>
+    </div>
+    <div class="row" style="margin-top:1rem"><button class="btn pri" data-act="doimp" ${ok?"":"disabled"}>Import attendance</button><span class="muted small" id="impprog"></span></div>
+  </div></div>`;
+}
+function deptCategory(d){ d=String(d||"").toLowerCase(); if(/support/.test(d)) return "Support"; if(/admin|office|clerk/.test(d)) return "Admin"; return "Tutorial"; }
+async function createStaffFromReport(){
+  const R=buildPreview(UI.imp); const list=Object.values(R.unmatched); const btn=$("[data-act=createstaff]"); if(btn){ btn.disabled=true; btn.textContent="Adding…"; }
+  const taken=new Set(Object.values(S.staff).map(s=>s.empId.toLowerCase()));
+  for(let i=0;i<list.length;i+=20){ await Promise.all(list.slice(i,i+20).map(async u=>{
+    let empId=u.id; if(taken.has(empId.toLowerCase())) empId="B"+u.id; taken.add(empId.toLowerCase());
+    const id=empId.replace(/[^A-Za-z0-9_-]/g,"")||uid(); const cat=deptCategory(u.dept);
+    const st={id,empId,bioId:u.id,name:u.name,designation:cat==="Tutorial"?"Teacher":cat==="Support"?"Supporting Staff":"Admin Staff",category:cat,department:"",role:"staff",firstApproverId:"",appointmentDate:"",email:"",mobile:"",status:"Active",pwHash:await hash(u.id,empId),mustChange:true,delegateId:"",delegateUntil:""};
+    return putAsync("staff",id,st).catch(()=>{}); })); }
+  audit(`${ME.name} added ${list.length} staff from fingerprint report "${UI.imp.fileName}"`);
+  toast(`${list.length} staff added. Their first password is their fingerprint ID. Assign Sectional Heads on the Staff page.`); render();
+}
+async function doImport(){
+  const P=UI.imp; const R=buildPreview(P); const btn=$("[data-act=doimp]"); if(btn) btn.disabled=true;
+  const impId=uid(); const writes=Object.entries(R.recs).filter(([k])=>S.attendance[k]?.source!=="manual");
+  const prog=$("#impprog");
+  for(let i=0;i<writes.length;i+=25){
+    await Promise.all(writes.slice(i,i+25).map(([k,r])=>putAsync("attendance",k,{id:k,staffId:r.staffId,date:r.date,in:r.in,out:r.out,...(typeof r.late==="boolean"?{late:r.late}:{}),source:"fingerprint",importId:impId}).catch(()=>{})));
+    if(prog) prog.textContent=`Saving ${Math.min(i+25,writes.length)} of ${writes.length}…`;
+  }
+  await putAsync("imports",impId,{id:impId,at:new Date().toISOString(),by:ME.id,byName:ME.name,fileName:P.fileName,dates:R.dates,records:writes.length,unmatched:Object.keys(R.unmatched)});
+  audit(`${ME.name} uploaded fingerprint attendance "${P.fileName}" — ${writes.length} records for ${R.dates.length} day${R.dates.length>1?"s":""}`);
+  UI.imp=null; toast(`Attendance imported for ${R.dates.map(fdShort).join(", ")}`); UI.reportDate=R.dates[R.dates.length-1]; go("daily");
+}
+function staffView(){
+  const f=UI.filter.toLowerCase();
+  const list=staffList(true).filter(s=>!f||`${s.name} ${s.empId} ${s.department} ${s.category}`.toLowerCase().includes(f));
+  const noAppr=staffList().filter(s=>s.category!=="Admin" && !s.firstApproverId && !["sectional_head","supervisor","headmaster","hr"].includes(s.role)).length;
+  const appr=staffList().filter(x=>["sectional_head","supervisor"].includes(x.role));
+  return `${noAppr?`<div class="note warn" style="margin-bottom:1rem"><b>${noAppr} Tutorial or Support staff have no first approver,</b> so their leave goes straight to the Headmaster. Tick them below and assign a Sectional Head or Supervisor.</div>`:""}
+  <div class="panel" style="margin-bottom:1rem"><div class="row"><b class="small">For ticked staff:</b>
+    <select id="bulkappr" style="width:auto"><option value="">No first approver</option>${appr.map(a=>`<option value="${a.id}">${esc(a.name)} (${esc(ROLES[a.role])})</option>`).join("")}</select><button class="btn sm" data-act="bulkappr">Set first approver</button>
+    <select id="bulkcat" style="width:auto"><option value="">Category…</option><option>Tutorial</option><option>Support</option><option>Admin</option></select><button class="btn sm" data-act="bulkcat">Set category</button></div>
+    ${appr.length?"":`<p class="small muted" style="margin-top:.5rem">To appear here, a Sectional Head or Supervisor needs that role on their staff record.</p>`}</div>
+  <div class="panel"><div class="head"><h2>${list.length} staff</h2><div class="row"><input type="text" placeholder="Search name, ID, section" data-bind="filter" value="${esc(UI.filter)}" style="width:220px"><button class="btn pri" data-act="newstaff">Add staff member</button></div></div>
+  <div class="scroll"><table><thead><tr><th><input type="checkbox" data-act="pickall" aria-label="Tick all"></th><th>ID</th><th>Fingerprint ID</th><th>Name</th><th>Category</th><th>Section</th><th>Role</th><th>First approver</th><th>Status</th></tr></thead><tbody>
+  ${list.map(s=>`<tr class="click" tabindex="0" data-staff="${s.id}"><td class="pickcell"><input type="checkbox" data-pick="${s.id}" aria-label="Tick ${esc(s.name)}"></td><td class="muted">${esc(s.empId)}</td><td>${s.bioId?esc(s.bioId):`<span class="muted small">not set</span>`}</td><td>${esc(s.name)}<div class="muted small">${esc(s.designation)}</div></td><td>${esc(s.category)}</td><td>${esc(s.department)}</td><td>${esc(ROLES[s.role])}</td><td>${s.firstApproverId?esc(nameOf(s.firstApproverId)):"—"}</td><td>${pill(s.status==="Inactive"?["Inactive","p-idle"]:["Active","p-ok"])}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+function staffModal(id){
+  const s=id?S.staff[id]:{empId:"",name:"",designation:"",category:"Tutorial",department:"",appointmentDate:"",email:"",mobile:"",role:"staff",firstApproverId:"",status:"Active"};
+  const approvers=staffList().filter(x=>["sectional_head","supervisor"].includes(x.role) && x.id!==id);
+  const opt=(v,cur,l)=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(l||v)}</option>`;
+  return `<div class="modal" data-close="1"><form class="box form" data-form="staff" data-id="${id||""}" role="dialog" aria-modal="true">
+    <div class="head"><h2>${id?"Edit staff member":"Add staff member"}</h2><button type="button" class="x" data-close="1" aria-label="Close">×</button></div>
+    <div class="f2"><label class="fl">Employee ID<input type="text" name="empId" value="${esc(s.empId)}" required ${id?"readonly":""}></label><label class="fl">Full name<input type="text" name="name" value="${esc(s.name)}" required></label></div>
+    <label class="fl">Fingerprint (BioStar) user ID <span class="h">The ID this person has on the fingerprint scanner. Used to match the daily upload.</span><input type="text" name="bioId" value="${esc(s.bioId||"")}"></label>
+    <div class="f2"><label class="fl">Designation<input type="text" name="designation" value="${esc(s.designation)}" required></label><label class="fl">Section / department<input type="text" name="department" value="${esc(s.department)}"></label></div>
+    <div class="f2"><label class="fl">Staff category <span class="h">Sets leave entitlement and approval route</span><select name="category">${["Tutorial","Support","Admin"].map(c=>opt(c,s.category)).join("")}</select></label>
+      <label class="fl">System role<select name="role">${Object.entries(ROLES).map(([k,v])=>opt(k,s.role,v)).join("")}</select></label></div>
+    <div class="f2"><label class="fl">First approver <span class="h">Sectional Head or Supervisor; leave empty for Admin staff</span><select name="firstApproverId"><option value="">None</option>${approvers.map(a=>opt(a.id,s.firstApproverId,`${a.name} (${ROLES[a.role]})`)).join("")}</select></label>
+      <label class="fl">Date of appointment<input type="date" name="appointmentDate" value="${esc(s.appointmentDate)}"></label></div>
+    <div class="f2"><label class="fl">Email<input type="email" name="email" value="${esc(s.email)}"></label><label class="fl">Mobile<input type="text" name="mobile" value="${esc(s.mobile)}"></label></div>
+    <div class="f2"><label class="fl">Employment status<select name="status">${opt("Active",s.status)}${opt("Inactive",s.status)}</select></label>
+      <label class="fl">${id?"Reset password":"Password"} <span class="h">${id?"Leave blank to keep the current one. ":""}They'll be asked to choose their own at first sign-in.</span><input type="password" name="pw" ${id?"":"required"} minlength="4"></label></div>
+    <div class="row"><button class="btn pri">Save staff member</button><button type="button" class="btn" data-close="1">Cancel</button></div></form></div>`;
+}
+function settingsView(){
+  const c=cfg(); const cats=["Tutorial","Support","Admin"];
+  const hm=headmaster();
+  return `<form class="stack" data-form="settings">
+  <div class="panel"><h2>Leave entitlement by staff category</h2><div class="scroll"><table><thead><tr><th>Category</th><th>Casual days / year</th><th>Medical days / year</th><th>Free short leaves / month</th><th>Casual deducted per extra short leave</th></tr></thead><tbody>
+  ${cats.map(k=>{const p=c.policies[k]; return `<tr><td><b>${k}</b></td><td><input type="number" min="0" step="0.5" name="${k}.casual" value="${p.casual}"></td><td><input type="number" min="0" step="0.5" name="${k}.medical" value="${p.medical}"></td><td><input type="number" min="0" name="${k}.shortFree" value="${p.shortFree}"></td><td><input type="number" min="0" step="0.25" name="${k}.shortDeduct" value="${p.shortDeduct}"></td></tr>`;}).join("")}</tbody></table></div></div>
+  <div class="panel"><h2>Approval route by staff category</h2><p class="muted small" style="margin-bottom:.8rem">HR verification is always the final step. Changing a route affects new applications only.</p>
+  <div class="scroll"><table><thead><tr><th>Category</th><th>First approver (Sectional Head / Supervisor)</th><th>Headmaster</th><th>HR</th></tr></thead><tbody>
+  ${cats.map(k=>`<tr><td><b>${k}</b></td><td><label class="check"><input type="checkbox" name="${k}.route.first" ${c.routes[k].includes("first")?"checked":""}> Required</label></td><td><label class="check"><input type="checkbox" name="${k}.route.headmaster" ${c.routes[k].includes("headmaster")?"checked":""}> Required</label></td><td><label class="check"><input type="checkbox" checked disabled> Always</label></td></tr>`).join("")}</tbody></table></div>
+  <label class="fl" style="margin-top:1rem;max-width:420px">Who approves the Headmaster's own leave before HR?<select name="headmasterApproverId"><option value="">No one — goes straight to HR</option>${staffList().filter(s=>s.id!==hm?.id).map(s=>`<option value="${s.id}" ${c.headmasterApproverId===s.id?"selected":""}>${esc(s.name)} (${esc(s.designation)})</option>`).join("")}</select></label></div>
+  <div class="panel"><h2>School day</h2><p class="muted small" style="margin-bottom:.8rem">Used only when the uploaded report doesn't say who was late. BioStar's own "Late In" result always wins.</p><div class="grid g4" style="max-width:780px">${["Tutorial","Support","Admin"].map(k=>`<label class="fl">${k} staff late after<input type="time" name="late.${k}" value="${c.lateByCat[k]}"></label>`).join("")}<label class="fl">Half day if checked out before<input type="time" name="halfDayBefore" value="${c.halfDayBefore}"></label></div></div>
+  <div class="panel"><h2>School holidays</h2><p class="muted small" style="margin-bottom:.8rem">Holidays are not counted as leave days and nobody is marked absent.</p>
+    ${(c.holidays||[]).length?`<table><tbody>${[...c.holidays].sort((a,b)=>a.date.localeCompare(b.date)).map(h=>`<tr><td>${fd(h.date)}</td><td>${esc(h.name)}</td><td class="num"><button type="button" class="btn sm bad" data-delhol="${h.date}">Remove</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">No holidays added.</div>`}
+    <div class="row" style="margin-top:.8rem"><input type="date" id="holdate" style="width:auto"><input type="text" id="holname" placeholder="Holiday name" style="width:220px"><button type="button" class="btn" data-act="addhol">Add holiday</button></div></div>
+  <div><button class="btn pri">Save settings</button></div></form>`;
+}
+function auditView(){
+  const f=UI.filter.toLowerCase();
+  const list=Object.values(S.audit).filter(a=>!f||`${a.byName} ${a.text}`.toLowerCase().includes(f)).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,300);
+  return `<div class="panel"><div class="head"><h2>Every change, newest first</h2><input type="text" placeholder="Search" data-bind="filter" value="${esc(UI.filter)}" style="width:220px"></div>
+  <div class="scroll"><table><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody>${list.map(a=>`<tr><td style="white-space:nowrap">${stamp(a.at)}</td><td>${esc(a.byName)}</td><td>${esc(a.text)}</td></tr>`).join("")||`<tr><td colspan="3" class="empty">No entries.</td></tr>`}</tbody></table></div></div>`;
+}
+function notifView(){
+  const notifs = useFetch("notifications", ()=>apiGet("/api/notifications"));
+  if(notifs===undefined) return `<div class="empty" style="padding-top:4rem">Loading…</div>`;
+  const list=notifs&&notifs.data?notifs.data:[];
+  return `<div class="panel"><div class="head"><h2>${list.filter(n=>!n.read).length} unread</h2>${list.some(n=>!n.read)?`<button class="btn sm" data-act="readall">Mark all as read</button>`:""}</div>
+  ${list.map(n=>`<div class="notif ${n.read?"":"unread"}"><b>${esc(n.title)}</b><div>${esc(n.message)}</div><small class="muted">${stamp(n.created_at)}</small></div>`).join("")||`<div class="empty">No notifications yet.</div>`}</div>`;
+}
+function renderModal(){ const m=$("#modal"); if(!UI.modal){ m.innerHTML=""; m.dataset.for=""; return; }
+  const key=UI.modal.kind+":"+UI.modal.id;
+  if((UI.modal.kind==="staff"||UI.modal.kind==="att") && m.dataset.for===key) return;
+  const prev=$("#cmt")?.value; m.innerHTML = UI.modal.kind==="leave"?leaveModal(UI.modal.id):UI.modal.kind==="att"?attModal(UI.modal.id):staffModal(UI.modal.id); m.dataset.for=key;
+  if(prev!=null && $("#cmt")) $("#cmt").value=prev; }
+
+/* ---------- events ---------- */
+document.addEventListener("click", async e=>{
+  if(e.target.closest(".pickcell")) return;
+  const t=e.target.closest("[data-go],[data-act],[data-leave],[data-staff],[data-decide],[data-close],[data-delhol],[data-att]");
+  if(!t) return;
+  if(t.dataset.close!==undefined && t.dataset.close){ if(t.classList.contains("modal") && e.target!==t) return; UI.modal=null; renderModal(); return; }
+  if(t.dataset.go){ go(t.dataset.go); return; }
+  if(t.dataset.leave){ UI.modal={kind:"leave",id:t.dataset.leave}; renderModal(); return; }
+  if(t.dataset.staff){ UI.modal={kind:"staff",id:t.dataset.staff}; renderModal(); return; }
+  if(t.dataset.att){ UI.modal={kind:"att",id:t.dataset.att}; renderModal(); return; }
+  if(t.dataset.decide){ t.disabled=true; await decide(t.dataset.decide,t.dataset.id); return; }
+  if(t.dataset.delhol){ const c=cfg(); put("config","main",{...c,holidays:c.holidays.filter(h=>h.date!==t.dataset.delhol)}); audit(`${ME.name} removed holiday ${fd(t.dataset.delhol)}`); render(); return; }
+  const a=t.dataset.act;
+  if(a==="menu"){ UI.menu=!UI.menu; render(); }
+  if(a==="logout"){ try{ await apiPost("/api/logout"); }catch(e){} ME=null; setSession(null); Object.keys(CACHE).forEach(k=>delete CACHE[k]); UI.view="home"; render(); }
+  if(a==="cancelimp"){ UI.imp=null; render(); }
+  if(a==="doimp") await doImport();
+  if(a==="createstaff") await createStaffFromReport();
+  if(a==="bulkappr"){ const ap=$("#bulkappr").value; const ids=[...document.querySelectorAll("[data-pick]:checked")].map(x=>x.dataset.pick); if(!ids.length){ toast("Tick the staff members first."); return; }
+    ids.forEach(i=>{ const st=S.staff[i]; if(st && st.id!==ap) put("staff",i,{...st,firstApproverId:ap}); }); audit(`${ME.name} set first approver ${ap?nameOf(ap):"(none)"} for ${ids.length} staff`); toast(`First approver updated for ${ids.length} staff`); render(); }
+  if(a==="bulkcat"){ const c=$("#bulkcat").value; const ids=[...document.querySelectorAll("[data-pick]:checked")].map(x=>x.dataset.pick); if(!ids.length||!c){ toast("Tick the staff members and choose a category."); return; }
+    ids.forEach(i=>put("staff",i,{...S.staff[i],category:c})); audit(`${ME.name} set category ${c} for ${ids.length} staff`); toast(`Category updated for ${ids.length} staff`); render(); }
+  if(a==="pickall"){ const on=t.checked; document.querySelectorAll("[data-pick]").forEach(x=>x.checked=on); return; }
+  if(a==="clearatt"){ const [sid,d]=t.dataset.key.split("|"); del("attendance",`${sid}_${d}`); audit(`${ME.name} removed the attendance record for ${nameOf(sid)} on ${fd(d)}`); UI.modal=null; toast("Record removed"); render(); }
+  if(a==="sampleimp"){ const rows=staffList().slice(0,6).map((s,i)=>[s.bioId||s.empId,s.name,fd(today()).replace(/ /g,"-"),`07:${pad(10+i*5)}`,`13:${pad(30+i)}`]); const d=today().split("-"); await exportCSV("biostar-sample.csv",["User ID","Name","Date","First In","Last Out"], rows.map(r=>[r[0],r[1],`${d[2]}/${d[1]}/${d[0]}`,r[3],r[4]])); }
+  if(a==="seed"){ t.disabled=true; t.textContent="Loading…"; try{ await seedDemo(); }catch(e){ toast(apiErr(e,"Couldn't load demo staff.")); t.disabled=false; t.textContent="Load demo staff"; } }
+  if(a==="newstaff"){ UI.modal={kind:"staff",id:""}; renderModal(); }
+  if(a==="readall"){ try{ await apiPost("/api/notifications/read-all"); }catch(e){ toast(apiErr(e)); return; } invalidate("notifications"); render(); }
+  if(a==="addhol"){ const d=$("#holdate").value, n=$("#holname").value.trim(); if(!d||!n){ toast("Enter a date and a name for the holiday."); return; } const c=cfg(); put("config","main",{...c,holidays:[...(c.holidays||[]).filter(h=>h.date!==d),{date:d,name:n}]}); audit(`${ME.name} added holiday ${fd(d)} — ${n}`); render(); }
+  if(a==="csvdaily"){ const d=UI.reportDate||today(); await exportCSV(`attendance-${d}.csv`,["Employee ID","Name","Category","Check in","Check out","Status"], dailyRows(d).map(r=>[r.s.empId,r.s.name,r.s.category,r.a.in||"",r.a.out||"",r.st[0]])); }
+  if(a==="csvmonthly"){ const m=UI.reportMonth||today().slice(0,7); await exportCSV(`leave-report-${m}.csv`,["Employee ID","Name","Category","Casual","Medical","Short","Other","Casual left (year)","Medical left (year)"], monthlyRows(m).map(r=>[r.s.empId,r.s.name,r.s.category,r.ca,r.me,r.sh,r.ot,r.b.casualLeft,r.b.medicalLeft])); }
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && UI.modal){ UI.modal=null; renderModal(); } if(e.key==="Enter" && e.target.closest("tr.click")) e.target.closest("tr.click").click(); });
+document.addEventListener("change", async e=>{
+  const b=e.target.dataset.bind; if(b && b!=="filter"){ UI[b]=e.target.value; render(); return; }
+  if(e.target.id==="impfile"){ const f=e.target.files[0]; if(!f) return; UI.impErr="";
+    try{ const rows=await readSheet(f); if(rows.length<2) throw new Error("The file has no attendance rows.");
+      const hi=headerRow(rows); UI.imp={fileName:f.name, header:rows[hi].map(x=>x instanceof Date?"Date":String(x)), rows:rows.slice(hi+1), map:guessMap(rows[hi].map(String)), order:"DMY"}; }
+    catch(err){ UI.impErr="Couldn't read that file: "+(err.message||err)+" Try exporting the BioStar daily report again, as PDF, CSV or Excel."; UI.imp=null; }
+    render(); return; }
+  if(e.target.dataset.map){ UI.imp.map[e.target.dataset.map]=+e.target.value; render(); return; }
+  if(e.target.dataset.imporder!==undefined){ UI.imp.order=e.target.value; render(); return; }
+  const form=e.target.closest("form[data-form=apply]");
+  if(form && e.target.type!=="file" && e.target.name!=="reason"){ const f=UI.applyForm, fd=new FormData(form);
+    f.type=fd.get("type"); f.from=fd.get("from")||f.from; if(f.type!=="Short") f.to=fd.get("to")||f.to; if(f.to<f.from) f.to=f.from;
+    f.half=!!fd.get("half"); f.reason=fd.get("reason")||""; if(fd.get("startTime")) f.startTime=fd.get("startTime"); if(fd.get("endTime")) f.endTime=fd.get("endTime");
+    UI.applyErr=""; render(); }
+});
+document.addEventListener("input", e=>{ if(e.target.name==="reason" && e.target.closest("form[data-form=apply]") && UI.applyForm) UI.applyForm.reason=e.target.value; if(e.target.dataset.bind==="filter"){ UI.filter=e.target.value; const pos=e.target.selectionStart; render(); const el=$("[data-bind=filter]"); if(el){ el.focus(); el.setSelectionRange(pos,pos);} } });
+document.addEventListener("submit", async e=>{
+  const f=e.target.closest("form[data-form]"); if(!f) return; e.preventDefault(); const d=new FormData(f); const k=f.dataset.form;
+  if(k==="login"){ try{ const resp=await apiPost("/api/login",{emp_id:d.get("empId"),password:d.get("pw")}); UI.loginErr=""; ME=resp.data; UI.view="home"; render(); }
+    catch(err){ UI.loginErr=apiErr(err,"That employee ID and password don't match."); render(); } }
+  if(k==="firsthr"){ try{ const resp=await apiPost("/api/setup/first-hr",{name:d.get("name"),emp_id:d.get("empId"),password:d.get("pw")});
+      ME=resp.data; NEEDS_SETUP=false; UI.view="home"; render(); }
+    catch(err){ toast(apiErr(err,"Couldn't create the HR account.")); } }
+  if(k==="apply") await submitLeave(f);
+  if(k==="firstpw"){ if(d.get("pw")!==d.get("pw2")){ toast("The two passwords don't match."); return; }
+    try{ const resp=await apiPost("/api/me/first-password",{password:d.get("pw"),password_confirmation:d.get("pw2")}); ME=resp.data; toast("Password saved"); render(); }
+    catch(err){ UI.loginErr=apiErr(err,"Couldn't save that password."); render(); } }
+  if(k==="att"){ const [sid,dt]=f.dataset.key.split("|"); const i=d.get("in"), o=d.get("out"); if(!i&&!o){ toast("Enter a check-in or check-out time."); return; } if(i&&o&&o<=i){ toast("Check-out must be after check-in."); return; }
+    const id=`${sid}_${dt}`; put("attendance",id,{id,staffId:sid,date:dt,in:i,out:o,source:"manual",reason:d.get("reason").trim(),by:ME.id});
+    audit(`${ME.name} corrected attendance for ${nameOf(sid)} on ${fd(dt)}: in ${t12(i)}, out ${t12(o)} — ${d.get("reason").trim()}`); UI.modal=null; toast("Correction saved"); render(); }
+  if(k==="profile"){ try{ const resp=await apiPut("/api/me",{email:d.get("email")||"",mobile:d.get("mobile")||""}); ME=resp.data; toast("Profile saved"); render(); }
+    catch(err){ toast(apiErr(err,"Couldn't save your profile.")); } }
+  if(k==="password"){ try{ await apiPut("/api/me/password",{old_password:d.get("old"),password:d.get("pw")}); toast("Password changed"); f.reset(); }
+    catch(err){ toast(apiErr(err,"Couldn't change your password.")); } }
+  if(k==="staff"){ const id=f.dataset.id; const empId=d.get("empId").trim();
+    if(!id && Object.values(S.staff).some(s=>s.empId.toLowerCase()===empId.toLowerCase())){ toast("That employee ID is already in use."); return; }
+    const newId=id||(empId.replace(/[^A-Za-z0-9_-]/g,"")||uid());
+    const base=id?S.staff[id]:{delegateId:"",delegateUntil:""};
+    const bio=String(d.get("bioId")||"").trim();
+    if(bio && Object.values(S.staff).some(x=>x.id!==newId && normId(x.bioId)===normId(bio))){ toast("That fingerprint ID is already linked to another staff member."); return; }
+    const s={...base,id:newId,empId,bioId:bio,name:d.get("name").trim(),designation:d.get("designation").trim(),department:d.get("department").trim(),category:d.get("category"),role:d.get("role"),firstApproverId:d.get("firstApproverId"),appointmentDate:d.get("appointmentDate"),email:d.get("email"),mobile:d.get("mobile"),status:d.get("status")};
+    if(d.get("pw")){ s.pwHash=await hash(d.get("pw"),empId); s.demo=false; s.mustChange=true; }
+    if(s.role==="headmaster"){ const other=staffList().find(x=>x.role==="headmaster"&&x.id!==newId); if(other){ toast(`${other.name} is already the Headmaster. Change their role first.`); return; } }
+    put("staff",newId,s); audit(`${ME.name} ${id?"updated":"added"} staff member ${s.name} (${s.empId})`); UI.modal=null; toast("Staff member saved"); render(); }
+  if(k==="settings"){ const c=cfg(); const cats=["Tutorial","Support","Admin"]; const pol={}, routes={};
+    cats.forEach(x=>{ pol[x]={casual:+d.get(`${x}.casual`),medical:+d.get(`${x}.medical`),shortFree:+d.get(`${x}.shortFree`),shortDeduct:+d.get(`${x}.shortDeduct`)}; routes[x]=[...(d.get(`${x}.route.first`)?["first"]:[]),...(d.get(`${x}.route.headmaster`)?["headmaster"]:[]),"hr"]; });
+    put("config","main",{...c,policies:pol,routes,headmasterApproverId:d.get("headmasterApproverId"),lateByCat:{Tutorial:d.get("late.Tutorial"),Support:d.get("late.Support"),Admin:d.get("late.Admin")},halfDayBefore:d.get("halfDayBefore")});
+    audit(`${ME.name} updated leave policies and approval routes`); toast("Settings saved"); render(); }
+});
+setInterval(()=>{ const c=$("#liveclock"); if(c) c.textContent=t12(nowHM()); }, 15000);
+boot();
+</script>
+</body>
+</html>
