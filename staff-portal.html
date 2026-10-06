@@ -821,7 +821,8 @@ function applyView(){
       ${f.from===f.to&&(f.type==="Casual"||f.type==="Medical")?`<label class="check"><input type="checkbox" name="half" ${f.half?"checked":""}> Half day only</label>`:""}`}
     <div class="note info">Number of days: <b>${days}</b>${f.type!=="Short"?" (weekends and school holidays are not counted)":""}. ${esc(hint)}</div>
     <label class="fl">Reason for leave<textarea name="reason" required>${esc(f.reason)}</textarea></label>
-    ${f.type==="Medical"?`<label class="fl">Medical certificate <span class="h">PDF, JPG or PNG, up to 5 MB</span><input type="file" name="cert" accept=".pdf,.jpg,.jpeg,.png"></label>`:""}
+    ${f.type==="Medical"?`<label class="fl">Medical certificate <span class="h">PDF, JPG or PNG, up to 5 MB</span><input type="file" name="cert" accept=".pdf,.jpg,.jpeg,.png"></label>`
+     :f.type==="Other"?`<label class="fl">Submit your leave notice <span class="h">PDF, JPG or PNG, up to 5 MB — optional</span><input type="file" name="cert" accept=".pdf,.jpg,.jpeg,.png"></label>`:""}
     ${UI.applyErr?`<div class="note bad">${esc(UI.applyErr)}</div>`:""}
     <div class="row"><button class="btn pri">Submit application</button><button type="button" class="btn" data-go="myleave">Cancel</button></div>
   </form>
@@ -921,14 +922,15 @@ function leaveModal(id){
     actions=`<div class="form" style="margin-top:1rem"><label class="fl">Comment <span class="h">Required to reject or ask for clarification</span><textarea id="cmt"></textarea></label>
     <div class="row"><button class="btn pri" data-decide="approve" data-id="${l.id}">${isHR?"Verify & grant leave":"Approve"}</button><button class="btn bad" data-decide="reject" data-id="${l.id}">Reject</button><button class="btn" data-decide="clarify" data-id="${l.id}">Request clarification</button></div></div>`;
   }
-  if(l.can_resubmit) actions=`<div class="form" style="margin-top:1rem"><label class="fl">Your reply / updated reason<textarea id="cmt">${esc(l.reason)}</textarea></label>${l.type==="Medical"?`<label class="fl">Medical certificate<input type="file" id="certfile" accept=".pdf,.jpg,.jpeg,.png"></label>`:""}<div class="row"><button class="btn pri" data-decide="resubmit" data-id="${l.id}">Resubmit</button><button class="btn bad" data-decide="cancel" data-id="${l.id}">Cancel application</button></div></div>`;
+  if(l.can_resubmit) actions=`<div class="form" style="margin-top:1rem"><label class="fl">Your reply / updated reason<textarea id="cmt">${esc(l.reason)}</textarea></label>${l.type==="Medical"?`<label class="fl">Medical certificate<input type="file" id="certfile" accept=".pdf,.jpg,.jpeg,.png"></label>`:l.type==="Other"?`<label class="fl">Leave notice<input type="file" id="certfile" accept=".pdf,.jpg,.jpeg,.png"></label>`:""}<div class="row"><button class="btn pri" data-decide="resubmit" data-id="${l.id}">Resubmit</button><button class="btn bad" data-decide="cancel" data-id="${l.id}">Cancel application</button></div></div>`;
   else if(l.can_cancel) actions=`<div class="row" style="margin-top:1rem"><button class="btn bad" data-decide="cancel" data-id="${l.id}">Cancel application</button></div>`;
   else if(l.can_hr_cancel) actions=`<div class="form" style="margin-top:1rem"><label class="fl">Reason for cancelling granted leave<textarea id="cmt"></textarea></label><div><button class="btn bad" data-decide="hrcancel" data-id="${l.id}">Cancel granted leave &amp; restore balance</button></div></div>`;
   return `<div class="modal" data-close="1"><div class="box" role="dialog" aria-modal="true" aria-labelledby="mt">
     <div class="head"><div><h2 id="mt">Leave #${l.id} — ${esc(l.type)}</h2><div style="margin-top:.4rem">${pill(statusPill(l))}</div></div><button class="x" data-close="1" aria-label="Close">×</button></div>
     <dl class="kv"><dt>Staff</dt><dd>${esc(st.name)} <span class="muted">(${esc(st.emp_id)})</span></dd><dt>Designation</dt><dd>${esc(st.designation||"")} · ${esc(st.category)}</dd>
     <dt>Dates</dt><dd>${rangeText(l)}</dd><dt>Days</dt><dd>${l.days}</dd><dt>Reason</dt><dd>${esc(l.reason)}</dd>
-    ${l.type==="Medical"?`<dt>Certificate</dt><dd>${l.certificate_url?`<a href="${l.certificate_url}" target="_blank" rel="noopener">View certificate</a>`:`<span style="color:var(--warn)">Not attached</span>`}</dd>`:""}</dl>
+    ${l.type==="Medical"?`<dt>Certificate</dt><dd>${l.certificate_url?`<a href="${l.certificate_url}" target="_blank" rel="noopener">View certificate</a>`:`<span style="color:var(--warn)">Not attached</span>`}</dd>`
+     :l.type==="Other"?`<dt>Leave notice</dt><dd>${l.certificate_url?`<a href="${l.certificate_url}" target="_blank" rel="noopener">View attachment</a>`:`<span class="muted">Not attached</span>`}</dd>`:""}</dl>
     ${hist.length?`<div class="note info small" style="margin-bottom:1rem">${hist.map(h=>`<div><b>${esc(h.action)}</b> — ${esc(h.by_staff?h.by_staff.name:"")}, ${stamp(h.created_at)}${h.comment?`: ${esc(h.comment)}`:""}</div>`).join("")}</div>`:""}
     <h3>Approval history</h3>${trail}${actions}</div></div>`;
 }
