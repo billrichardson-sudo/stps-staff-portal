@@ -10,18 +10,19 @@
 /Staff DB.xlsx
 /stps-staff-database.sql
 /Daily_Report_*.pdf
+/STPS-Staff-Login-Credentials.pdf
 
-# Unused draft/alternate images (only school-hero.png and school-crest.png are live)
+# Unused draft/alternate images (only school-hero.png, school-crest.png, dashboard-hero.jpg and login-hero.jpg are live)
 /Logo A v1.0 - PNG.png
 /SCHOOL IMAGE 03.png
 /Schoo Image .jpg
 /school image new.png
 /school-hero.jpg
+/background image.png
 
 .DS_Store
 Thumbs.db
 .claude/
 STPS_Staff_Attendance_and_Leave_Management_System_Proposal.docx
-patch-upload/phpoption.tar.gz
-patch-upload/var-dumper.tar.gz
+/patch-upload/
 school-hero.png

@@ -7,6 +7,7 @@ use App\Http\Requests\StoreAttendanceImportRequest;
 use App\Http\Resources\AttendanceImportResource;
 use App\Models\Attendance;
 use App\Models\AttendanceImport;
+use App\Services\AbsenceReminderService;
 use App\Services\AuditLogger;
 
 class AttendanceImportController extends Controller
@@ -18,7 +19,7 @@ class AttendanceImportController extends Controller
         );
     }
 
-    public function store(StoreAttendanceImportRequest $request)
+    public function store(StoreAttendanceImportRequest $request, AbsenceReminderService $absenceReminderService)
     {
         $user = $request->user();
         $records = collect($request->input('records'));
@@ -59,6 +60,9 @@ class AttendanceImportController extends Controller
 
         $dayWord = count($dates) === 1 ? 'day' : 'days';
         AuditLogger::log($user, "{$user->name} uploaded fingerprint attendance \"{$import->file_name}\" — {$written} records for ".count($dates)." {$dayWord}");
+
+        $absenceReminderService->checkNewAbsences($dates);
+        $absenceReminderService->flagOverdueAbsences();
 
         return AttendanceImportResource::make($import->load('importedBy'))->response()->setStatusCode(201);
     }

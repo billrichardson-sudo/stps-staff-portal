@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\StaffSummaryResource;
 use App\Models\LeaveApplication;
 use App\Models\Staff;
+use App\Services\AbsenceReminderService;
 use App\Services\AttendanceService;
 use App\Services\LeaveService;
 use Illuminate\Http\Request;
@@ -13,7 +14,7 @@ use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
-    public function show(Request $request, AttendanceService $attendanceService, LeaveService $leaveService)
+    public function show(Request $request, AttendanceService $attendanceService, LeaveService $leaveService, AbsenceReminderService $absenceReminderService)
     {
         $date = Carbon::parse($request->query('date', $attendanceService->latestUpload() ?? today()->toDateString()));
         $staffList = Staff::where('status', 'Active')->get();
@@ -65,6 +66,13 @@ class DashboardController extends Controller
             ];
         });
 
+        $unexplainedAbsences = $absenceReminderService->flagOverdueAbsences()
+            ->map(fn ($r) => [
+                'staff' => StaffSummaryResource::make($r->staff),
+                'date' => $r->date->toDateString(),
+                'deadline' => $r->deadline->toDateString(),
+            ])->values();
+
         return response()->json(['data' => [
             'date' => $date->toDateString(),
             'total_staff' => $staffList->count(),
@@ -76,6 +84,7 @@ class DashboardController extends Controller
             'pending_all' => $pendingApps->count(),
             'missing_uploads' => $attendanceService->missingUploads(7),
             'by_category' => $byCategory,
+            'unexplained_absences' => $unexplainedAbsences,
         ]]);
     }
 }

@@ -58,7 +58,11 @@ a{color:var(--brand)}
 @media (prefers-reduced-motion:reduce){.nav-pill, .nav-pill .pill-fill, .nav-pill .pill-icon, .nav-pill .pill-label{transition:none!important}}
 
 .main{min-width:0; padding:1.5rem 2rem 3rem}
-.topbar{display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem}
+#bgGradient{position:fixed; inset:0; width:100vw; height:100vh; z-index:-2; pointer-events:none}
+#bgGrain{position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.16; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:120px 120px}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:.9rem 1.2rem}
 .topbar .sub{color:var(--muted); font-size:.9rem; margin-top:.2rem}
 .menubtn{display:none}
 .bell{position:relative; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:.45rem .7rem; cursor:pointer}
@@ -96,6 +100,64 @@ a{color:var(--brand)}
 .bal b{font-family:var(--serif); font-size:1.6rem; font-weight:500}
 .bal .bar{height:6px; background:var(--line); border-radius:3px; margin-top:.5rem; overflow:hidden}
 .bal .bar i{display:block; height:100%; background:var(--brand)}
+
+/* quick-action cards on the home dashboard */
+.qa-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+.qa-card{display:flex; flex-direction:column; align-items:flex-start; gap:.15rem; text-align:left; cursor:pointer; transition:border-color .15s,transform .15s; width:100%}
+.qa-card:hover{border-color:var(--brand); transform:translateY(-2px)}
+.qa-ico{width:2.3rem; height:2.3rem; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; background:var(--surface2); margin-bottom:.4rem}
+.qa-card b{font-size:.96rem}
+
+/* today's attendance block */
+.att-today .pill{font-size:.85rem; padding:.2rem .75rem}
+.att-today .g2{margin-top:.9rem}
+.att-today .g2 b{font-family:var(--serif); font-size:1.3rem; font-weight:500}
+
+/* scroll-expand welcome hero (first dashboard visit of the session) */
+.hero-expand{position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:16px; margin:-.2rem 0 1rem}
+.hero-bgwrap{position:absolute; inset:0; z-index:0}
+.hero-bgimg{width:100%; height:100%; object-fit:cover}
+.hero-bgtint{position:absolute; inset:0; background:linear-gradient(180deg,rgba(22,32,43,.15),rgba(22,32,43,.6))}
+.hero-media{position:relative; z-index:1; width:300px; height:400px; max-width:95vw; max-height:85vh; border-radius:20px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.hero-media img{width:100%; height:100%; object-fit:cover}
+.hero-media-tint{position:absolute; inset:0; background:rgba(22,32,43,.25)}
+.hero-copy{position:absolute; z-index:2; top:50%; left:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:.5rem; text-align:center; pointer-events:none; width:100%}
+.hero-row{display:flex; gap:1rem; justify-content:center}
+.login-hero-row{flex-direction:column; gap:.1rem}
+.hero-big{font-family:var(--serif); font-weight:600; font-size:clamp(2rem,6vw,4.2rem); color:#fff; text-shadow:0 2px 20px rgba(0,0,0,.45); white-space:nowrap}
+.hero-sub{color:#EAF4FD; font-size:1.05rem; letter-spacing:.04em; text-shadow:0 2px 12px rgba(0,0,0,.4)}
+.hero-hint{position:absolute; left:50%; bottom:2rem; transform:translateX(-50%); z-index:2; background:none; border:0; padding:.4rem .8rem; cursor:pointer; color:#fff; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; animation:heroBounce 1.8s ease-in-out infinite}
+.hero-hint:hover{text-decoration:underline}
+@keyframes heroBounce{0%,100%{transform:translate(-50%,0)} 50%{transform:translate(-50%,8px)}}
+
+/* settled static welcome banner (repeat visits within the session) */
+.hero-settled{position:relative; border-radius:16px; overflow:hidden; min-height:230px; display:flex; align-items:center; margin-bottom:.2rem}
+.hero-settled-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.hero-settled-tint{position:absolute; inset:0; background:linear-gradient(120deg,rgba(22,32,43,.8),rgba(22,32,43,.3))}
+.hero-settled-copy{position:relative; z-index:1; padding:1.8rem 2.2rem; color:#fff}
+.hero-settled-kicker{font-weight:700; letter-spacing:.09em; font-size:.82rem; color:#9ED1FB; margin-bottom:.3rem; text-transform:uppercase}
+.hero-settled-copy h1{font-family:var(--serif); font-weight:600; font-size:clamp(1.5rem,4vw,2.3rem); margin:0 0 .35rem}
+.hero-settled-sub{color:#D7E8FA; font-size:.9rem}
+
+/* login stage: background photo + sign-in card + hero overlay all coexist and crossfade via inline opacity, driven by HERO.login.progress — see heroTick()/loginView() */
+.login-stage{position:relative; min-height:100vh; overflow:hidden}
+.login-settled-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.login-settled-tint{position:absolute; inset:0; background:linear-gradient(180deg,rgba(22,32,43,.4),rgba(22,32,43,.6))}
+.login-crest-badge{position:absolute; top:1.5rem; right:1.5rem; z-index:3; height:4.6rem; filter:drop-shadow(0 2px 10px rgba(0,0,0,.45))}
+.login-reveal{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1; display:flex; flex-direction:column; align-items:center; width:min(400px,92vw); transition:opacity .15s linear}
+.login-settled-card{width:100%; background:rgba(255,255,255,.68); backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%); border:1px solid rgba(255,255,255,.5); border-radius:16px; padding:2rem 2.2rem; box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.login-settled-brand{display:flex; align-items:center; gap:.8rem; margin-bottom:1.4rem; padding-bottom:1.2rem; border-bottom:1px solid var(--line)}
+.login-settled-crest{height:3.6rem}
+.login-settled-brand b{display:block; font-family:var(--serif); font-size:1rem}
+.login-settled-brand span{display:block; color:var(--muted); font-size:.8rem}
+.login-back{display:block; width:100%; margin-top:1.2rem; background:none; border:0; padding:0; color:var(--muted); font-size:.8rem; cursor:pointer; text-align:center}
+.login-back:hover{color:var(--brand); text-decoration:underline}
+.login-tagline{margin-top:1.4rem; text-align:center; color:#fff}
+.login-kw{display:flex; gap:1.2rem; justify-content:center; font-weight:700; letter-spacing:.12em; font-size:.8rem; text-transform:uppercase; margin-bottom:.6rem; text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.login-tagline p{font-size:.88rem; color:#EAF4FD; text-shadow:0 2px 10px rgba(0,0,0,.5); line-height:1.5; margin:0}
+.login-stage .hero-expand.login-hero-overlay{position:absolute; inset:0; min-height:0; z-index:2; margin:0; border-radius:0; transition:opacity .15s linear}
+@media (max-width:560px){ .hero-row{flex-direction:column; gap:.2rem} .hero-settled-copy{padding:1.3rem 1.4rem} .login-settled-card{padding:1.5rem 1.6rem} .login-crest-badge{height:3.2rem; top:1rem; right:1rem} .login-kw{gap:.7rem; font-size:.72rem} }
+@media (prefers-reduced-motion:reduce){ .hero-hint{animation:none} }
 
 table{width:100%; border-collapse:collapse; font-size:.9rem}
 th{text-align:left; font-weight:600; color:var(--muted); font-size:.82rem; padding:.5rem .6rem; border-bottom:1px solid var(--line); white-space:nowrap}
@@ -211,7 +273,7 @@ dl.kv dt{color:var(--muted)} dl.kv dd{margin:0}
   .side.open{transform:none}
   .menubtn{display:inline-block}
   .main{padding:1rem 1rem 3rem}
-  .g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3,.g4,.qa-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g2{grid-template-columns:1fr}
   .login{grid-template-columns:1fr} .login .art{padding:2rem} .login .art h1{font-size:2rem}
   .login .art.sakura{padding:0; min-height:46vh}
@@ -224,13 +286,15 @@ dl.kv dt{color:var(--muted)} dl.kv dd{margin:0}
 @media (max-width:560px){
   .clock{grid-template-columns:1fr} .clock .time{font-size:2.8rem}
   .types{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .f2,.bal{grid-template-columns:1fr}
+  .f2,.bal,.qa-cards{grid-template-columns:1fr}
   dl.kv{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
+<canvas id="bgGradient" aria-hidden="true"></canvas>
+<div id="bgGrain" aria-hidden="true"></div>
 <div id="root"><div class="empty" style="padding-top:30vh">Loading the staff portal…</div></div>
 <div id="modal"></div>
 <script>
@@ -391,6 +455,12 @@ function rangeText(l){
   if(l.type==="Short") return `${fdShort(l.from_date)}, ${t12(l.start_time)}–${t12(l.end_time)}`;
   return l.from_date===l.to_date ? fd(l.from_date) : `${fdShort(l.from_date)} – ${fd(l.to_date)}`;
 }
+function trailFor(l){
+  return `<ol class="trail"><li class="done"><i></i><b>${esc(l.staff.name)} applied</b><small>${stamp(l.created_at)}</small></li>
+    ${l.steps.map((x,i)=>{ const c=x.status==="approved"?"done":x.status==="rejected"?"no":(i===l.current_step&&(l.status==="pending"||l.status==="clarify"))?"now":""; const lbl=x.kind==="hr"?"HR verification":x.label;
+      return `<li class="${c}"><i></i><b>${esc(lbl)} ${x.status==="approved"?"✓":x.status==="rejected"?"✗":""}</b><small>${x.acted_by?`${esc(x.acted_by.name)} · ${stamp(x.acted_at)}`:(x.approver?esc(x.approver.name):"Any HR officer")}${c==="now"?" · waiting":""}</small>${x.comment?`<q>${esc(x.comment)}</q>`:""}</li>`; }).join("")}
+    <li class="${l.status==="granted"?"done":l.status==="rejected"||l.status==="cancelled"?"no":""}"><i></i><b>${l.status==="rejected"?"Rejected":l.status==="cancelled"?"Cancelled":"Leave granted"}</b></li></ol>`;
+}
 
 /* ---------- attendance logic ---------- */
 let _impKey="", _impSet=new Set();
@@ -477,7 +547,10 @@ function render(){
       <div class="topbar">
         <div class="row"><button class="btn menubtn" data-act="menu" aria-label="Open menu">☰</button>
           <div><h1>${esc(titles[UI.view]||"")}</h1><div class="sub">${fdLong(today())}</div></div></div>
-        <button class="bell" data-go="notifs" aria-label="Notifications">🔔${unread?`<span class="count">${unread}</span>`:""}</button>
+        <div class="row" style="gap:.9rem">
+          <div class="small" style="text-align:right; line-height:1.3"><b style="color:var(--ink)">${esc(ME.name)}</b><br><span class="muted">${esc(ME.emp_id)}</span></div>
+          <button class="bell" data-go="notifs" aria-label="Notifications">🔔${unread?`<span class="count">${unread}</span>`:""}</button>
+        </div>
       </div>
       ${viewBody()}
     </main>
@@ -508,29 +581,52 @@ function setupView(){
 }
 function loginView(){
   const demo = DEMO_SEEDED;
-  return `<div class="login"><div class="art sakura">
-      <span class="sakura-tag">Kollupitiya, Colombo</span>
-      <h1 class="sakura-title"><img src="school-crest.png" alt="" class="sakura-crest"><span class="sakura-wordmark"><span class="sakura-name">S. Thomas' Preparatory School</span><span class="sakura-place">Kollupitiya</span></span></h1>
-      <div class="sakura-copy">
-        <div class="sakura-keywords"><span>Attend</span><span>Apply</span><span>Approve</span></div>
-        <h2 class="sakura-headline">Every school day, in one place.</h2>
-        <p class="sakura-body">Mark your attendance, apply for leave and follow every approval without leaving your desk.</p>
-        <p class="sakura-sub">Sign in to continue.</p>
-        <div class="sakura-foot"><span>${esc(SCHOOL)}</span><span>Staff Portal</span><span>${fdLong(today())}</span></div>
+  const p = HERO.login.progress;
+  const {w,h,tx} = heroMetrics(p);
+  const wrapOp = Math.max(0,1-p*1.3), wrapPE = p>=0.9?"none":"auto";
+  const cardOp = Math.min(1,Math.max(0,(p-0.7)/0.3)), cardPE = p>=1?"auto":"none";
+  return `<div class="login-stage">
+    <img class="login-settled-img" src="login-hero.jpg" alt="">
+    <div class="login-settled-tint"></div>
+    <img src="school-crest.png" alt="" class="login-crest-badge">
+    <div class="login-reveal" id="loginReveal" style="opacity:${cardOp}; pointer-events:${cardPE}">
+      <div class="login-settled-card">
+        <div class="login-settled-brand"><img src="school-crest.png" alt="" class="login-settled-crest"><div><b>S. Thomas' Preparatory School</b><span>Kollupitiya · Staff Portal</span></div></div>
+        <form class="form" data-form="login">
+          <h2>Sign in</h2>
+          <label class="fl">Employee ID<input type="text" name="empId" required autocomplete="username"></label>
+          <label class="fl">Password<input type="password" name="pw" required autocomplete="current-password"></label>
+          ${UI.loginErr?`<div class="note bad">${esc(UI.loginErr)}</div>`:""}
+          <button class="flow-btn">
+            <svg class="flow-arrow left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            <span class="flow-text">Sign in</span>
+            <span class="flow-circle"></span>
+            <svg class="flow-arrow right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+          ${demo?`<div class="note info">Demo accounts (password 1234): <b>E001</b> HR · <b>E002</b> Headmaster · <b>E003</b> Sectional Head · <b>E020</b> Support Supervisor · <b>E010</b> Tutorial staff · <b>E021</b> Support staff · <b>E030</b> Admin staff</div>`:""}
+        </form>
+        <button type="button" class="login-back" data-act="backhero" data-ctx="login">↑ Back to welcome</button>
+      </div>
+      <div class="login-tagline">
+        <div class="login-kw"><span>Attend</span><span>Apply</span><span>Approve</span></div>
+        <p>Mark your attendance, apply for leave and follow every approval without leaving your desk.</p>
       </div>
     </div>
-  <div class="card"><div class="card-bg" aria-hidden="true"><div class="card-bg-layer"></div><svg class="card-bg-grain" aria-hidden="true"><filter id="cardgrain"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#cardgrain)"/></svg></div><form class="form" data-form="login"><h2>Sign in</h2>
-    <label class="fl">Employee ID<input type="text" name="empId" required autocomplete="username"></label>
-    <label class="fl">Password<input type="password" name="pw" required autocomplete="current-password"></label>
-    ${UI.loginErr?`<div class="note bad">${esc(UI.loginErr)}</div>`:""}
-    <button class="flow-btn">
-      <svg class="flow-arrow left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-      <span class="flow-text">Sign in</span>
-      <span class="flow-circle"></span>
-      <svg class="flow-arrow right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-    </button>
-    ${demo?`<div class="note info">Demo accounts (password 1234): <b>E001</b> HR · <b>E002</b> Headmaster · <b>E003</b> Sectional Head · <b>E020</b> Support Supervisor · <b>E010</b> Tutorial staff · <b>E021</b> Support staff · <b>E030</b> Admin staff</div>`:""}
-  </form></div></div>`;
+    <section class="hero-expand login-hero-overlay" id="loginHeroExpand" aria-label="S. Thomas' Preparatory School Staff Portal" style="opacity:${wrapOp}; pointer-events:${wrapPE}">
+      <div class="hero-bgwrap" id="loginHeroBgWrap" style="opacity:${1-p*0.6}"><img class="hero-bgimg" src="login-hero.jpg" alt=""><div class="hero-bgtint"></div></div>
+      <div class="hero-media" id="loginHeroMedia" style="width:${w}px;height:${h}px">
+        <img src="login-hero.jpg" alt=""><div class="hero-media-tint"></div>
+      </div>
+      <div class="hero-copy" id="loginHeroCopy">
+        <div class="hero-row login-hero-row">
+          <span class="hero-big" id="loginHeroL" style="transform:translateX(-${tx}vw)">STPS</span>
+          <span class="hero-big" id="loginHeroR" style="transform:translateX(${tx}vw)">Staff Portal</span>
+        </div>
+        <div class="hero-sub">S. Thomas' Preparatory School · Kollupitiya</div>
+      </div>
+      <button type="button" class="hero-hint" id="loginHeroHint" data-act="skiphero" data-ctx="login" style="opacity:${Math.max(0,1-p*2)}">Continue to sign in ↓</button>
+    </section>
+  </div>`;
 }
 const greet = () => { const h=new Date().getHours(); return h<12?"morning":h<17?"afternoon":"evening"; };
 async function seedDemo(){
@@ -542,31 +638,157 @@ async function seedDemo(){
   toast(resp.message || "Demo staff loaded.");
 }
 
+/* ---------- scroll-expand heroes (login screen + dashboard welcome) ----------
+   The dashboard hero is "sticky": it runs once per browser session, then
+   settles into a compact static banner so it doesn't re-hijack scroll on
+   every daily visit to "Today". The login hero is fully reversible instead —
+   its media/text and the sign-in card coexist in the same markup and
+   crossfade, so scrolling back up at any point brings the hero back, every
+   time. Both share one mechanism, keyed by context, so only one set of
+   scroll/touch listeners is ever bound. */
+const HERO_CFG = {
+  dash:  { ids:{wrap:"heroExpand",      media:"heroMedia",      L:"heroL",      R:"heroR",      bg:"heroBgWrap",      hint:"heroHint"},      sessionKey:"heroSeen", sticky:true },
+  login: { ids:{wrap:"loginHeroExpand", media:"loginHeroMedia", L:"loginHeroL", R:"loginHeroR", bg:"loginHeroBgWrap", hint:"loginHeroHint", reveal:"loginReveal"}, sticky:false }
+};
+let HERO = { dash:{phase:"intro",progress:0}, login:{progress:0} };
+try{ if(sessionStorage.getItem(HERO_CFG.dash.sessionKey)==="1"){ HERO.dash.phase="settled"; HERO.dash.progress=1; } }catch(e){}
+try{ if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){ HERO.dash.phase="settled"; HERO.dash.progress=1; HERO.login.progress=1; } }catch(e){}
+function heroMetrics(p){
+  const mobile = window.innerWidth < 768;
+  const w = Math.min(300 + p*(mobile?650:1250), window.innerWidth*0.95);
+  const h = Math.min(400 + p*(mobile?200:400), window.innerHeight*0.85);
+  const tx = p*(mobile?55:90);
+  return {w,h,tx};
+}
+function activeHeroCtx(){
+  if(!ME && !NEEDS_SETUP) return "login";
+  if(ME && !ME.must_change_password && UI.view==="home") return HERO.dash.phase==="intro" ? "dash" : null;
+  return null;
+}
+function heroTick(ctx, delta){
+  const st = HERO[ctx], cfg = HERO_CFG[ctx];
+  if(!st || (cfg.sticky && st.phase!=="intro")) return;
+  const p = Math.min(Math.max(st.progress+delta,0),1);
+  st.progress = p;
+  const {w,h,tx} = heroMetrics(p);
+  const wrap=$("#"+cfg.ids.wrap), media=$("#"+cfg.ids.media), L=$("#"+cfg.ids.L), R=$("#"+cfg.ids.R), bg=$("#"+cfg.ids.bg), hint=$("#"+cfg.ids.hint);
+  if(!media) return;
+  media.style.width=w+"px"; media.style.height=h+"px";
+  if(L) L.style.transform=`translateX(-${tx}vw)`;
+  if(R) R.style.transform=`translateX(${tx}vw)`;
+  if(bg) bg.style.opacity=String(1-p*0.6);
+  if(hint) hint.style.opacity=String(Math.max(0,1-p*2));
+  if(!cfg.sticky){
+    if(wrap){ const wOp=Math.max(0,1-p*1.3); wrap.style.opacity=String(wOp); wrap.style.pointerEvents=p>=0.9?"none":"auto"; }
+    const reveal=cfg.ids.reveal && $("#"+cfg.ids.reveal);
+    if(reveal){ const rOp=Math.min(1,Math.max(0,(p-0.7)/0.3)); reveal.style.opacity=String(rOp); reveal.style.pointerEvents=p>=1?"auto":"none"; }
+    return;
+  }
+  if(p>=1){
+    st.phase="settled";
+    try{ sessionStorage.setItem(cfg.sessionKey,"1"); }catch(e){}
+    render();
+  }
+}
+window.addEventListener("wheel", e=>{
+  const ctx=activeHeroCtx(); if(!ctx) return;
+  e.preventDefault();
+  heroTick(ctx, e.deltaY*0.0012);
+}, {passive:false});
+let _heroTouchY=0;
+window.addEventListener("touchstart", e=>{ const ctx=activeHeroCtx(); if(ctx) _heroTouchY=e.touches[0].clientY; }, {passive:true});
+window.addEventListener("touchmove", e=>{
+  const ctx=activeHeroCtx(); if(!ctx || !_heroTouchY) return;
+  e.preventDefault();
+  const y=e.touches[0].clientY;
+  heroTick(ctx, (_heroTouchY-y)*0.006);
+  _heroTouchY=y;
+}, {passive:false});
+window.addEventListener("scroll", ()=>{ if(activeHeroCtx()) window.scrollTo(0,0); });
+
 /* ---------- views: staff ---------- */
 function homeView(){
   const balance = useFetch("balance", ()=>apiGet("/api/me/balance").then(r=>r.data));
   const myLeaves = useFetch("myLeaves", ()=>apiGet("/api/leave-applications?scope=mine").then(r=>r.data));
   const notifs = useFetch("notifications", ()=>apiGet("/api/notifications"));
-  const approvalsQueue = useFetch("approvalsQueue", ()=>apiGet("/api/leave-applications?scope=approvals").then(r=>r.data));
-  const hrQueue = (ME.role==="hr"||ME.role==="headmaster") ? useFetch("hrQueue", ()=>apiGet("/api/leave-applications?scope=hr_verification").then(r=>r.data)) : [];
-  if([balance,myLeaves,notifs].some(v=>v===undefined)) return `<div class="empty" style="padding-top:4rem">Loading…</div>`;
+  const todayAtt = useFetch("todayAttendance", ()=>apiGet(`/api/attendance?month=${today().slice(0,7)}`).then(r=>r.data));
+  const approver = ["sectional_head","supervisor","headmaster"].includes(ME.role);
+  const showHr = ME.role==="hr"||ME.role==="headmaster";
+  const approvalsQueue = approver ? useFetch("approvalsQueue", ()=>apiGet("/api/leave-applications?scope=approvals").then(r=>r.data)) : [];
+  const hrQueue = showHr ? useFetch("hrQueue", ()=>apiGet("/api/leave-applications?scope=hr_verification").then(r=>r.data)) : [];
+  if([balance,myLeaves,notifs,todayAtt].some(v=>v===undefined)) return `<div class="empty" style="padding-top:4rem">Loading…</div>`;
   const recent=(Array.isArray(myLeaves)?myLeaves:[]).slice(0,4);
   const notifList=(notifs&&notifs.data?notifs.data:[]).slice(0,4);
-  const q=(ME.role==="hr"?(hrQueue||[]):(approvalsQueue||[])).length;
-  return `<div class="stack">
-    <section class="clock" aria-label="Attendance">
-      <div><div class="date">Good ${greet()}, ${esc(ME.name.split(" ")[0])}</div>
-        <p class="muted small" style="margin-top:.7rem; max-width:44ch">Attendance comes from the fingerprint scanner and is uploaded by HR each day. If a day looks wrong, contact HR.</p>
-      </div>
-    </section>
-    ${q?`<div class="note warn"><b>${q} leave application${q>1?"s are":" is"} waiting for you.</b> <button class="btn sm" data-go="${ME.role==="hr"?"verify":"approvals"}" style="margin-left:.5rem">Review</button></div>`:""}
+  const active = recent.find(l=>l.status==="pending"||l.status==="clarify") || recent[0];
+  const aN=(approvalsQueue||[]).length, hN=(hrQueue||[]).length;
+  const cards = [
+    ["myatt","🕐","Attendance","View your record"],
+    ["apply","📝","Apply for leave","Submit a new request"],
+    ["myleave","📋","My leave","Track your applications"],
+    ["notifs","🔔","Notifications","Stay updated"]
+  ];
+  const rest = `
+    <div class="grid qa-cards">
+      ${cards.map(([go,ico,label,sub])=>`<button class="panel qa-card" data-go="${go}"><span class="qa-ico">${ico}</span><b>${esc(label)}</b><span class="muted small">${esc(sub)}</span></button>`).join("")}
+    </div>
+    ${(approver||showHr)?`<div class="panel"><div class="head"><h2>Pending approvals</h2>${(aN||hN)?`<button class="btn sm" data-go="${ME.role==="hr"?"verify":"approvals"}">Review</button>`:""}</div>
+      <div class="${approver&&showHr?"grid g2":""}">
+        ${approver?`<div class="stat"><b>${aN}</b><span>Leave approval${aN===1?"":"s"} waiting</span></div>`:""}
+        ${showHr?`<div class="stat"><b>${hN}</b><span>HR verification${hN===1?"":"s"} waiting</span></div>`:""}
+      </div></div>`:""}
     <div class="grid g2">
+      <div class="panel"><div class="head"><h2>Today's attendance</h2></div>${todayAttendanceBlock(todayAtt)}</div>
       <div class="panel"><div class="head"><h2>My leave balance</h2><span class="muted small">${esc(ME.category)} staff · ${today().slice(0,4)}</span></div>${balance.__error?`<div class="empty">${esc(balance.__error)}</div>`:balanceBlock(balance)}</div>
+    </div>
+    <div class="grid g2" style="align-items:start">
       <div class="panel"><div class="head"><h2>Recent applications</h2><button class="btn sm" data-go="apply">Apply for leave</button></div>
         ${recent.length?`<table><tbody>${recent.map(l=>`<tr class="click" tabindex="0" data-leave="${l.id}"><td>${esc(l.type)}<div class="muted small">${rangeText(l)}</div></td><td class="num">${pill(statusPill(l))}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">No applications yet.</div>`}</div>
+      <div class="panel"><div class="head"><h2>Approval progress</h2>${active?`<button class="btn sm" data-leave="${active.id}">Details</button>`:""}</div>
+        ${active?trailFor(active):`<div class="empty">No leave applications to track yet.</div>`}</div>
     </div>
     <div class="panel"><div class="head"><h2>Notifications</h2><button class="btn sm" data-go="notifs">See all</button></div>
-      ${notifList.length?notifList.map(n=>`<div class="notif ${n.read?"":"unread"}"><b>${esc(n.title)}</b><div>${esc(n.message)}</div><small class="muted">${stamp(n.created_at)}</small></div>`).join(""):`<div class="empty">You're all caught up.</div>`}</div>
+      ${notifList.length?notifList.map(n=>`<div class="notif ${n.read?"":"unread"}"><b>${esc(n.title)}</b><div>${esc(n.message)}</div><small class="muted">${stamp(n.created_at)}</small></div>`).join(""):`<div class="empty">You're all caught up.</div>`}</div>`;
+  return `<div class="stack">${heroBlock()}${HERO.dash.phase==="intro"?`<div id="dashRest" style="display:none">${rest}</div>`:rest}</div>`;
+}
+function heroBlock(){
+  if(HERO.dash.phase==="settled"){
+    return `<section class="hero-settled">
+      <img class="hero-settled-img" src="dashboard-hero.jpg" alt="">
+      <div class="hero-settled-tint"></div>
+      <div class="hero-settled-copy">
+        <div class="hero-settled-kicker">Welcome!</div>
+        <h1>${esc(ME.name)}</h1>
+        <div class="hero-settled-sub">Staff Leave Portal · ${esc(ME.designation||"")} · ${esc(ROLES[ME.role])}</div>
+      </div>
+    </section>`;
+  }
+  const {w,h,tx} = heroMetrics(HERO.dash.progress);
+  return `<section class="hero-expand" id="heroExpand" aria-label="Welcome">
+    <div class="hero-bgwrap" id="heroBgWrap" style="opacity:${1-HERO.dash.progress*0.6}"><img class="hero-bgimg" src="dashboard-hero.jpg" alt=""><div class="hero-bgtint"></div></div>
+    <div class="hero-media" id="heroMedia" style="width:${w}px;height:${h}px">
+      <img src="dashboard-hero.jpg" alt=""><div class="hero-media-tint"></div>
+    </div>
+    <div class="hero-copy" id="heroCopy">
+      <div class="hero-row">
+        <span class="hero-big" id="heroL" style="transform:translateX(-${tx}vw)">Welcome!</span>
+        <span class="hero-big" id="heroR" style="transform:translateX(${tx}vw)">${esc(ME.name)}</span>
+      </div>
+      <div class="hero-sub">Staff Leave Portal</div>
+    </div>
+    <button type="button" class="hero-hint" id="heroHint" data-act="skiphero" data-ctx="dash" style="opacity:${Math.max(0,1-HERO.dash.progress*2)}">Continue to dashboard ↓</button>
+  </section>`;
+}
+function todayAttendanceBlock(rows){
+  const row=(Array.isArray(rows)?rows:[])[0];
+  if(!row) return `<div class="empty">No attendance data yet.</div>`;
+  return `<div class="att-today">
+    <div class="row" style="justify-content:space-between; align-items:center">
+      <span class="muted small">${fdLong(row.date)}</span>${pill([row.status,`p-${row.status_color}`])}
+    </div>
+    <div class="grid g2">
+      <div><span class="muted small">Check-in</span><br><b>${t12(row.check_in)}</b></div>
+      <div><span class="muted small">Check-out</span><br><b>${t12(row.check_out)}</b></div>
+    </div>
   </div>`;
 }
 function balanceBlock(b){
@@ -692,10 +914,7 @@ function leaveModal(id){
   if(l===undefined) return `<div class="modal" data-close="1"><div class="box"><div class="empty">Loading…</div></div></div>`;
   if(l.__error) return `<div class="modal" data-close="1"><div class="box"><div class="empty">${esc(l.__error)}</div></div></div>`;
   const st=l.staff;
-  const trail=`<ol class="trail"><li class="done"><i></i><b>${esc(st.name)} applied</b><small>${stamp(l.created_at)}</small></li>
-    ${l.steps.map((x,i)=>{ const c=x.status==="approved"?"done":x.status==="rejected"?"no":(i===l.current_step&&(l.status==="pending"||l.status==="clarify"))?"now":""; const lbl=x.kind==="hr"?"HR verification":x.label;
-      return `<li class="${c}"><i></i><b>${esc(lbl)} ${x.status==="approved"?"✓":x.status==="rejected"?"✗":""}</b><small>${x.acted_by?`${esc(x.acted_by.name)} · ${stamp(x.acted_at)}`:(x.approver?esc(x.approver.name):"Any HR officer")}${c==="now"?" · waiting":""}</small>${x.comment?`<q>${esc(x.comment)}</q>`:""}</li>`; }).join("")}
-    <li class="${l.status==="granted"?"done":l.status==="rejected"||l.status==="cancelled"?"no":""}"><i></i><b>${l.status==="rejected"?"Rejected":l.status==="cancelled"?"Cancelled":"Leave granted"}</b></li></ol>`;
+  const trail=trailFor(l);
   const hist=(l.histories||[]).filter(h=>/Clarif|Resubmit|Cancel/.test(h.action));
   let actions="";
   if(l.can_act){ const step=l.steps[l.current_step]; const isHR=step&&step.kind==="hr";
@@ -748,8 +967,12 @@ function dashView(){
   const pendAll=Object.values(S.leaves).filter(l=>l.status==="pending").length;
   const miss=missingUploads(7).filter(x=>x<today());
   const cats=["Tutorial","Support","Admin"].map(c=>{ const ss=all.filter(s=>s.category===c); let ca=0,me=0,sh=0; ss.forEach(s=>{const b=balances(s); ca+=b.casualTaken; me+=b.medicalTaken; sh+=b.shortMonth;}); return {c,n:ss.length,ca,me,sh}; });
+  const overdue = useFetch("overdueAbsences", ()=>apiGet("/api/dashboard").then(r=>r.data.unexplained_absences||[]));
   return `<div class="stack">
   ${miss.length&&ME.role==="hr"?`<div class="note warn"><b>Not uploaded yet:</b> ${miss.map(fdShort).join(", ")}. <button class="btn sm" data-go="import" style="margin-left:.5rem">Upload attendance</button></div>`:""}
+  ${overdue&&overdue.length?`<div class="panel"><div class="head"><h2>Unexplained absences — past the 7-day deadline</h2></div>
+    <table><tbody>${overdue.map(o=>`<tr><td>${esc(o.staff.name)}<div class="muted small">${esc(o.staff.designation||"")} · ${esc(o.staff.emp_id)}</div></td><td class="num">${fdShort(o.date)}</td><td class="num muted small">Deadline was ${fdShort(o.deadline)}</td></tr>`).join("")}</tbody></table>
+    <p class="muted small" style="margin-top:.8rem">Absent with no leave application on file, and the 7-day grace period has passed without one. Review each and decide whether to record it as unpaid leave.</p></div>`:""}
   <div class="panel"><div class="head"><h2>Attendance on ${fdLong(d)}</h2><input type="date" data-bind="dashDate" value="${d}" style="width:auto"></div>
   ${uploadedDates().has(d)?"":`<div class="note info" style="margin-bottom:1rem">Fingerprint attendance for this date hasn't been uploaded, so nobody is counted as absent yet.</div>`}
   <div class="grid g4"><div class="stat"><b>${all.length}</b><span>Total staff</span></div><div class="stat"><b>${present}</b><span>Present</span></div><div class="stat"><b>${late}</b><span>Late</span></div><div class="stat"><b>${absent}</b><span>Absent</span></div></div></div>
@@ -1051,6 +1274,8 @@ document.addEventListener("click", async e=>{
   if(t.dataset.decide){ t.disabled=true; await decide(t.dataset.decide,t.dataset.id); return; }
   if(t.dataset.delhol){ const c=cfg(); put("config","main",{...c,holidays:c.holidays.filter(h=>h.date!==t.dataset.delhol)}); audit(`${ME.name} removed holiday ${fd(t.dataset.delhol)}`); render(); return; }
   const a=t.dataset.act;
+  if(a==="skiphero"){ heroTick(t.dataset.ctx, 2); return; }
+  if(a==="backhero"){ heroTick(t.dataset.ctx, -2); return; }
   if(a==="menu"){ UI.menu=!UI.menu; render(); }
   if(a==="logout"){ try{ await apiPost("/api/logout"); }catch(e){} ME=null; setSession(null); Object.keys(CACHE).forEach(k=>delete CACHE[k]); UI.view="home"; render(); }
   if(a==="cancelimp"){ UI.imp=null; render(); }
@@ -1121,6 +1346,72 @@ document.addEventListener("submit", async e=>{
     audit(`${ME.name} updated leave policies and approval routes`); toast("Settings saved"); render(); }
 });
 setInterval(()=>{ const c=$("#liveclock"); if(c) c.textContent=t12(nowHM()); }, 15000);
+
+/* ---------- animated background gradient (21st.dev "Ribbon Field" style) ----------
+   Persistent canvas behind the whole app (siblings of #root, never touched by
+   render()), driven by its own rAF loop so it animates continuously regardless
+   of app re-renders. Grain is a static tiled SVG overlay (cheap) rather than
+   per-frame canvas noise, to keep the animation loop itself lightweight. */
+(function initBgGradient(){
+  const canvas = $("#bgGradient");
+  if(!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const stops = [
+    {c:[255,255,255], pos:18},
+    {c:[120,184,249], pos:57},
+    {c:[86,103,255], pos:60},
+    {c:[77,47,249], pos:100}
+  ];
+  function colorAt(t){
+    t = Math.max(0, Math.min(100, t));
+    for(let i=0;i<stops.length-1;i++){
+      const a=stops[i], b=stops[i+1];
+      if(t>=a.pos && t<=b.pos){
+        const f = b.pos===a.pos ? 0 : (t-a.pos)/(b.pos-a.pos);
+        return [0,1,2].map(k=>Math.round(a.c[k]+(b.c[k]-a.c[k])*f));
+      }
+    }
+    return t<stops[0].pos ? stops[0].c : stops[stops.length-1].c;
+  }
+  function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+  resize();
+  window.addEventListener("resize", resize);
+
+  const angleDeg = 38, waveAmt = 14;
+  const rad = angleDeg*Math.PI/180, dx=Math.cos(rad), dy=Math.sin(rad);
+  let reduceMotion = false;
+  try{ reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
+
+  function paint(waveClock){
+    const w=canvas.width, h=canvas.height;
+    if(!w||!h) return;
+    const cx=w/2, cy=h/2;
+    const len = Math.abs(w*dx)+Math.abs(h*dy);
+    const x0=cx-dx*len/2, y0=cy-dy*len/2, x1=cx+dx*len/2, y1=cy+dy*len/2;
+    const grad = ctx.createLinearGradient(x0,y0,x1,y1);
+    const n=40;
+    for(let i=0;i<=n;i++){
+      const pos = i/n*100;
+      const sway = (waveAmt/100)*0.35*Math.sin(2*Math.PI*0.15*(pos/100)*2.4 + waveClock)*100;
+      const p = pos + sway*0.4;
+      const col = colorAt(p);
+      grad.addColorStop(i/n, `rgb(${col[0]},${col[1]},${col[2]})`);
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,w,h);
+  }
+
+  if(reduceMotion){ paint(20.75); return; }
+
+  function frame(tMs){
+    const ph = (tMs/1000)*1.0;
+    const waveClock = 20.75 + ph*1.2;
+    paint(waveClock);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
 boot();
 </script>
 </body>
